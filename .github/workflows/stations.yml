@@ -1,0 +1,51 @@
+name: stations
+
+# Опрос метеостанций Ростовской области:
+# METAR (NOAA) + Open-Meteo current/hourly/daily → THI и индексы
+# → коммит среза в data/ (latest.json + snapshots/ГГГГ-ММ-ДД.json).
+on:
+  schedule:
+    - cron: '0 * * * *' # каждый час (UTC)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stations
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Опрос станций (METAR + Open-Meteo)
+        run: node tools/fetch_stations.mjs
+
+      - name: Сводка
+        run: |
+          echo '### Срез станций' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          node -e "const l=require('./data/latest.json');console.log(l.generatedAt, l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20), 'T='+s.t, 'THI='+s.thi, 'THImax7='+s.thiMax7, 'BRD='+s.brd)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Коммит среза
+        run: |
+          git config user.name "vet-meteo-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "нет изменений — не коммитим"
+          else
+            git commit -m "data: срез станций $(date -u +'%Y-%m-%d %H:%M') UTC [skip ci]"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

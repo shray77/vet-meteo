@@ -30,6 +30,23 @@ export default function InfoDialog() {
               <p className="text-[#8a8f78]">Пороги: 68 лёгкий · 72 умеренный · 80 тяжёлый · 90 критический (Armstrong, 1994). Потери удоя ≈ 0.25 кг на ед. THI выше 72 (Ravagnolo & Misztal, 2000).</p>
             </section>
             <section>
+              <h3 className="mb-1 text-[#f0c674]">Видовые THI, WCI, HLI/AHL</h3>
+              <p className="text-[#b8bca8]">
+                Птица: 0.6·Tdb + 0.4·Twb (Twb — Stull 2011). Свиноматки: NRC-THI, пороги 72/78/84.
+                WCI = (10.45 + 10√v − v)·(33 − T) — холод КРС. HLI = THI + 0.35·(TG−Tdb) − 1.4·WS
+                (TG = Tdb + 0.016·SWR, по мотивам Gaughan, Mader 2008); AHL копит HLI&gt;77 с
+                распадом 2%/ч.
+              </p>
+            </section>
+            <section>
+              <h3 className="mb-1 text-[#f0c674]">Ансамбль ECMWF</h3>
+              <p className="text-[#b8bca8]">ensemble-api.open-meteo.com (51 член, без ключа): THImax p10/p50/p90, P(THI&gt;72/80). Фолбэк — пертурбация детерминированного прогноза.</p>
+            </section>
+            <section>
+              <h3 className="mb-1 text-[#f0c674]">Трансмиссивные</h3>
+              <p className="text-[#b8bca8]">Дирофиляриоз: HDU = Σ(Tmean−14)⁺, L3 ≈ 130 HDU (Knight, Lok). ВЗН/Culex: GDD₁₀ + оптимум 25±6°С + осадки. Culicoides: midge-days Σ(Tmean−13)⁺, окно передачи ≥15°С (EFSA-подход).</p>
+            </section>
+            <section>
               <h3 className="mb-1 text-[#f0c674]">BRD — респираторные болезни телят</h3>
               <p className="text-[#b8bca8]">Скоринг 0–100: амплитуда T·сутки (до 35) + сырость RH/осадки (до 25) + застой/сквозняк по рельефу (до 18) + похолодание к прошлым суткам (до 20).</p>
               <p className="text-[#8a8f78]">Эвристические веса по литературе энзоотической бронхопневмонии (shipping fever). &gt;60 — высокий риск.</p>
@@ -48,6 +65,14 @@ export default function InfoDialog() {
               <h3 className="mb-1 text-[#f0c674]">АЧС — коридор волны кабана</h3>
               <p className="text-[#b8bca8]">Suitability 0.1° (лес+вода−город) → Дейкстра, цена шага = км × (1.6 − 1.2·suit); волна 12 км/ночь × 20 ночей.</p>
               <p className="text-[#8a8f78]">Официальные кольца: 5/20/100 км (регламент ВетИС). Очаги — ДЕМО-данные.</p>
+            </section>
+            <section>
+              <h3 className="mb-1 text-[#f0c674]">Надзор: EARS · Фаррингтон · Rt · Кульдорфф</h3>
+              <p className="text-[#b8bca8]">EARS C1/C2/C3 (CDC/ECDC): отклонения от скользящего базлайна, alarm ≥ 3. Фаррингтон: log-линейный базлайн + 95% граница. Rt (Cori 2013): гамма-апостериор Γ(1+ΣI, 1/5+ΣΛ), SI 14±7. Скан Кульдорффа: круговой Пуассон, Монте-Карло 199 реплик. Ряды — демо (сид).</p>
+            </section>
+            <section>
+              <h3 className="mb-1 text-[#f0c674]">Архив GitHub Actions</h3>
+              <p className="text-[#b8bca8]">stations.yml опрашивает METAR + Open-Meteo каждый час и коммитит снапшоты в data/ (история 30 дней). Сайт читает с raw.githubusercontent — бейдж «АРХИВ Actions».</p>
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Топо-поправки</h3>

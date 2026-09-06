@@ -12,6 +12,7 @@ const LAYER_LABELS: Record<keyof LayerToggles, string> = {
   metar: 'METAR',
   osint: 'OSINT',
   cchl: 'КГЛ-районы',
+  plume: 'плюм',
 };
 
 export default function MapToolbar({
@@ -36,7 +37,7 @@ export default function MapToolbar({
           className="gap-1"
         >
           <ToggleGroupItem value="topo" className="h-6 px-2 font-mono text-[10px]">топо</ToggleGroupItem>
-          <ToggleGroupItem value="dark" className="h-6 px-2 font-mono text-[10px]">тёмн</ToggleGroupItem>
+          <ToggleGroupItem value="dark" className="h-6 px-2 font-mono text-[10px]">тёмн (Esri)</ToggleGroupItem>
         </ToggleGroup>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

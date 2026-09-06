@@ -1,18 +1,30 @@
 'use client';
 
 /**
- * ВЕТРАДАР-61 — ветеринарный ГИС-прототип Ростовской области.
- * Клиентская страница: карта слева, панель справа, шапка с бейджем источника.
+ * ВЕТРАДАР-61 → vet-meteo — ветеринарный ГИС-прототип Ростовской области.
+ * Клиентская страница: карта слева, панель справа, шапка с бейджем источника,
+ * прогноз-скраббер 0..167 ч, ансамбль ECMWF, архив GitHub Actions.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import RightPanel from '@/components/vetradar/RightPanel';
 import MapToolbar from '@/components/vetradar/MapToolbar';
+import TimeScrubber, { currentBaseHour } from '@/components/vetradar/TimeScrubber';
 import InfoDialog from '@/components/vetradar/InfoDialog';
 import { Badge } from '@/components/ui/badge';
 import { assessAll, allTriggers } from '@/lib/assessment';
-import type { MetarObs, MqttPoint, PointAssessment, TriggerItem } from '@/lib/types';
+import { fetchEnsemble, perturbedEnsemble } from '@/lib/models/ensemble';
+import { loadArchive } from '@/lib/archive';
+import type {
+  ArchiveBundle,
+  EnsembleResult,
+  MetarObs,
+  MqttPoint,
+  PointAssessment,
+  TriggerItem,
+} from '@/lib/types';
 import type { LayerToggles } from '@/components/vetradar/GisMap';
+import { FIELD_POINTS } from '@/lib/geo/rostov';
 
 /** Leaflet требует window — рендерим карту только на клиенте. */
 const GisMap = dynamic(() => import('@/components/vetradar/GisMap'), {
@@ -28,26 +40,48 @@ export default function Home() {
   const [outbreakIdx, setOutbreakIdx] = useState(0);
   const [tile, setTile] = useState<'topo' | 'dark'>('topo');
   const [layers, setLayers] = useState<LayerToggles>({
-    rivers: true, asf: true, metar: true, osint: false, cchl: false,
+    rivers: true, asf: true, metar: true, osint: false, cchl: false, plume: false,
   });
   const [loading, setLoading] = useState(true);
+  const [hourIdx, setHourIdx] = useState(currentBaseHour());
+  const [ensemble, setEnsemble] = useState<EnsembleResult | null>(null);
+  const [archive, setArchive] = useState<ArchiveBundle | null>(null);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [a, m] = await Promise.all([
+      const [a, m, arc] = await Promise.all([
         assessAll(),
         fetch('/api/metar').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        loadArchive().catch(() => null),
       ]);
       if (!alive) return;
       setAssessments(a);
       if (m?.stations?.length) setMetarStations(m.stations);
+      setArchive(arc);
       setLoading(false);
     })();
     return () => {
       alive = false;
     };
   }, []);
+
+  // Ансамбль для выбранной точки: ECMWF → пертурбация вокруг детерминированного
+  useEffect(() => {
+    let alive = true;
+    const p = FIELD_POINTS.find((f) => f.id === selectedId);
+    const a = selectedId ? assessments[selectedId] : null;
+    if (!p || !a) return;
+    (async () => {
+      const ens = await fetchEnsemble(p.lat, p.lon).catch(() => null);
+      if (!alive) return;
+      if (ens) setEnsemble(ens);
+      else if (a.outlook.length) setEnsemble(perturbedEnsemble(a.outlook.map((d) => ({ date: d.date, thiMax: d.thiMax }))));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [selectedId, assessments]);
 
   const triggers: TriggerItem[] = useMemo(() => allTriggers(assessments), [assessments]);
 
@@ -103,15 +137,16 @@ export default function Home() {
         ? { t: 'метео: прокси', c: 'bg-[#1d3125] text-[#f0c674]' }
         : { t: 'метео: live', c: 'bg-[#1d3a1d] text-[#7fbf6f]' };
   const metarLive = metarStations.length > 0;
+  const archiveLive = !!archive?.latest;
 
   return (
     <div className="flex h-screen flex-col bg-[#0b0d08] text-[#d8dcc8]">
       <header className="flex flex-wrap items-center gap-2 border-b border-[#3a4030] bg-[#10130a] px-3 py-2">
         <span className="font-mono text-sm font-bold tracking-widest text-[#f0c674]">
-          ВЕТРАДАР-61
+          ВЕТМЕТЕО / ВЕТРАДАР-61
         </span>
         <span className="hidden font-mono text-[10px] text-[#8a8f78] sm:inline">
-          вет. эпид-риски Ростовской обл. · сейчас + 7 дней
+          вет. метеопрогноз и эпид-риски Ростовской обл. · сейчас + 7 дней
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
           <Badge className={`${badge.c} hover:${badge.c} font-mono text-[10px]`}>{badge.t}</Badge>
@@ -121,6 +156,14 @@ export default function Home() {
             }`}
           >
             METAR {metarLive ? `×${metarStations.length}` : '—'}
+          </Badge>
+          <Badge
+            className={`font-mono text-[10px] ${
+              archiveLive ? 'bg-[#1d3a1d] text-[#7fbf6f]' : 'bg-[#232819] text-[#8a8f78]'
+            }`}
+            title="hourly GitHub Actions: опрос станций → коммит снапшотов в data/"
+          >
+            АРХИВ Actions {archiveLive ? '✓' : '—'}
           </Badge>
           <Badge className="bg-[#232819] font-mono text-[10px] text-[#8a8f78]">
             {loading ? '…' : `${Object.keys(assessments).length} точек`}
@@ -143,8 +186,10 @@ export default function Home() {
               onSelectOutbreak={setOutbreakIdx}
               tile={tile}
               layers={layers}
+              hourIdx={hourIdx}
             />
           </div>
+          <TimeScrubber hourIdx={hourIdx} onHour={setHourIdx} assessments={assessments} />
         </div>
         <aside className="w-full shrink-0 overflow-hidden border-t border-[#3a4030] p-2 lg:w-[380px] lg:border-l lg:border-t-0">
           <RightPanel
@@ -157,6 +202,10 @@ export default function Home() {
             osintPoints={osintPoints}
             onOsintScan={onOsintScan}
             onOsintDemo={onOsintDemo}
+            hourIdx={hourIdx}
+            metarStations={metarStations}
+            ensemble={ensemble}
+            archive={archive}
           />
         </aside>
       </div>

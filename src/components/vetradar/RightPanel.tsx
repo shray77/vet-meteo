@@ -1,6 +1,6 @@
 'use client';
 
-/** Правая панель: Сводка / Прогноз 7д / АЧС / OSINT. */
+/** Правая панель: Сводка / Прогноз / Станции / Ансамбль / АЧС / Надзор / OSINT. */
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import type { MqttPoint, PointAssessment } from '@/lib/types';
+import type { ArchiveBundle, EnsembleResult, MetarObs, MqttPoint, PointAssessment } from '@/lib/types';
 import type { TriggerItem } from '@/lib/types';
 import { FIELD_POINTS, ASF_DEMO_OUTBREAKS, CCHF_DISTRICTS } from '@/lib/geo/rostov';
 import { getAsfSpread } from '@/lib/models/asf';
@@ -16,6 +16,10 @@ import { milkLoss } from '@/lib/models/thi';
 import Gauges from './Gauges';
 import HourlyThiChart from './HourlyThiChart';
 import TriggerFeed from './TriggerFeed';
+import StationTable from './StationTable';
+import EnsembleChart from './EnsembleChart';
+import SurveillancePanel from './SurveillancePanel';
+import { SpeciesStressBlock, VectorBlock } from './StressBlocks';
 
 function sourceBadge(s: 'openmeteo' | 'proxy' | 'synthetic') {
   if (s === 'openmeteo') return <Badge className="bg-[#1d3a1d] text-[#7fbf6f] hover:bg-[#1d3a1d]">live Open-Meteo</Badge>;
@@ -33,6 +37,10 @@ export default function RightPanel(props: {
   osintPoints: MqttPoint[];
   onOsintScan: (provider: 'shodan' | 'censys', key: string, secret: string) => Promise<string>;
   onOsintDemo: () => void;
+  hourIdx: number;
+  metarStations: MetarObs[];
+  ensemble: EnsembleResult | null;
+  archive: ArchiveBundle | null;
 }) {
   const [osintProvider, setOsintProvider] = useState<'shodan' | 'censys'>('shodan');
   const [osintKey, setOsintKey] = useState('');
@@ -54,10 +62,13 @@ export default function RightPanel(props: {
 
   return (
     <Tabs defaultValue="summary" className="flex h-full flex-col gap-2">
-      <TabsList className="grid h-8 w-full grid-cols-4 bg-[#1a1e12]">
+      <TabsList className="grid h-auto w-full grid-cols-4 gap-0.5 bg-[#1a1e12]">
         <TabsTrigger value="summary" className="h-7 font-mono text-[10px]">Сводка</TabsTrigger>
         <TabsTrigger value="forecast" className="h-7 font-mono text-[10px]">Прогноз</TabsTrigger>
+        <TabsTrigger value="stations" className="h-7 font-mono text-[10px]">Станции</TabsTrigger>
+        <TabsTrigger value="ensemble" className="h-7 font-mono text-[10px]">Ансамбль</TabsTrigger>
         <TabsTrigger value="asf" className="h-7 font-mono text-[10px]">АЧС</TabsTrigger>
+        <TabsTrigger value="surv" className="h-7 font-mono text-[10px]">Надзор</TabsTrigger>
         <TabsTrigger value="osint" className="h-7 font-mono text-[10px]">OSINT</TabsTrigger>
       </TabsList>
 
@@ -127,8 +138,10 @@ export default function RightPanel(props: {
                   </SelectContent>
                 </Select>
               </div>
-              <HourlyThiChart hourly={a.hourly} dayFilter={chartDay} />
+              <HourlyThiChart hourly={a.hourly} dayFilter={chartDay} hourIdx={props.hourIdx} />
             </div>
+            <SpeciesStressBlock hourly={a.hourly} hourIdx={props.hourIdx} />
+            <VectorBlock a={a} />
             <div className="space-y-1">
               {a.outlook.map((d) => (
                 <div
@@ -160,6 +173,38 @@ export default function RightPanel(props: {
         ) : (
           <div className="p-4 font-mono text-xs text-[#8a8f78]">выберите точку</div>
         )}
+      </TabsContent>
+
+      {/* Станции */}
+      <TabsContent value="stations" className="mt-0 flex-1 overflow-y-auto">
+        <StationTable
+          assessments={props.assessments}
+          metarStations={props.metarStations}
+          archive={props.archive}
+          hourIdx={props.hourIdx}
+          selectedId={props.selectedId}
+          onSelectPoint={props.onSelectPoint}
+        />
+      </TabsContent>
+
+      {/* Ансамбль */}
+      <TabsContent value="ensemble" className="mt-0 flex-1 overflow-y-auto">
+        <div className="space-y-2">
+          <div className="font-mono text-[10px] text-[#8a8f78]">
+            вероятностный прогноз для: <b className="text-[#d8dcc8]">{a?.point.name ?? '—'}</b> (выбери точку на карте)
+          </div>
+          <EnsembleChart ens={props.ensemble} />
+          <div className="rounded border border-[#3a4030] bg-[#14170f] p-2 font-mono text-[9px] leading-4 text-[#8a8f78]">
+            p10/p50/p90 — перцентили THImax по 51 члену ансамбля ECMWF (ensemble-api.open-meteo,
+            без ключа). В песочнице без интернета — локальная пертурбация (честно помечена).
+            P(THI&gt;80)&gt;30% — закладывай водяное охлаждение/ночные кормления в план дня.
+          </div>
+        </div>
+      </TabsContent>
+
+      {/* Надзор */}
+      <TabsContent value="surv" className="mt-0 flex-1 overflow-y-auto">
+        <SurveillancePanel />
       </TabsContent>
 
       {/* АЧС */}

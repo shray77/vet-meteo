@@ -32,6 +32,8 @@ export interface HourlyPoint {
   temp: number;
   rh: number;
   wind: number;
+  wdir?: number | null;
+  swr?: number | null;
   precip: number;
   thi: number;
 }
@@ -128,3 +130,64 @@ export interface TopoInfo {
 }
 
 export type WeatherSource = 'openmeteo' | 'proxy' | 'synthetic';
+
+/* ===== Ансамбль ECMWF (p10/p50/p90 THI, вероятности) ===== */
+
+export interface EnsembleDay {
+  date: string;
+  label: string;
+  /** THImax p10/p50/p90 по ансамблю */
+  p10: number;
+  p50: number;
+  p90: number;
+  /** P(THImax > 72) и P(THImax > 80), доли */
+  p72: number;
+  p80: number;
+}
+
+export interface EnsembleResult {
+  source: 'ecmwf' | 'perturbed';
+  days: EnsembleDay[];
+}
+
+/* ===== Архив GitHub Actions (data/latest.json + snapshots) ===== */
+
+export interface ArchiveStation {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  t: number;
+  rh: number;
+  wind: number;
+  wdir: number | null;
+  precip24: number;
+  thi: number;
+  thiMaxToday: number;
+  thiMax7: number;
+}
+
+export interface ArchiveMetar {
+  icao: string;
+  name: string;
+  t: number | null;
+  rh: number | null;
+  wdir: number | null;
+  wspd: number | null;
+  raw: string;
+}
+
+export interface ArchiveLatest {
+  generatedAt: string;
+  stations: ArchiveStation[];
+  metar: ArchiveMetar[];
+}
+
+/** Почасовая серия станции из снапшотов: [ts, T, RH, wind, THI]. */
+export type ArchiveRow = [string, number, number, number, number];
+
+export interface ArchiveBundle {
+  latest: ArchiveLatest | null;
+  history: Record<string, ArchiveRow[]>;
+  days: string[];
+}

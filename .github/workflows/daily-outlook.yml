@@ -1,0 +1,50 @@
+name: daily-outlook
+
+# Суточный дайджест: 7-дневный прогноз THI по всем станциям,
+# дни превышения 72/80, осадки, вчерашняя фактура из снапшотов → data/outlook.json.
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC = 06:00 МСК
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-outlook
+  cancel-in-progress: false
+
+jobs:
+  outlook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Расчёт 7-дневного дайджеста
+        run: node tools/outlook.mjs
+
+      - name: Сводка
+        run: |
+          echo '### Дайджест 7 дней' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          node -e "const o=require('./data/outlook.json');for(const d of o.digest)console.log(d)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Коммит
+        run: |
+          git config user.name "vet-meteo-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "нет изменений"
+          else
+            git commit -m "data: суточный дайджест $(date -u +'%Y-%m-%d') [skip ci]"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

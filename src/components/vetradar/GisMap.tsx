@@ -16,6 +16,8 @@ import type { MetarObs, MqttPoint } from '@/lib/types';
 import type { PointAssessment } from '@/lib/assessment';
 import { RIVERS, RO_BBOX, CCHF_DISTRICTS, ASF_DEMO_OUTBREAKS } from '@/lib/geo/rostov';
 import { getAsfSpread } from '@/lib/models/asf';
+import { getPlume, plumeColor, PLUME_PRESETS } from '@/lib/models/plume';
+import { thiColor } from './StationColor';
 
 export interface LayerToggles {
   rivers: boolean;
@@ -23,6 +25,7 @@ export interface LayerToggles {
   metar: boolean;
   osint: boolean;
   cchl: boolean;
+  plume: boolean;
 }
 
 interface GisMapProps {
@@ -35,6 +38,8 @@ interface GisMapProps {
   onSelectOutbreak: (idx: number) => void;
   tile: 'topo' | 'dark';
   layers: LayerToggles;
+  /** индекс часа в почасовом прогнозе (0 = 00:00 сегодня) */
+  hourIdx: number;
 }
 
 function esc(s: string): string {
@@ -51,6 +56,7 @@ function daysColor(days: number): string {
 export default function GisMap(props: GisMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
+  const labelRef = useRef<L.TileLayer | null>(null);
   const layersRef = useRef<Record<string, L.LayerGroup> | null>(null);
 
   useEffect(() => {
@@ -82,6 +88,7 @@ export default function GisMap(props: GisMapProps) {
       metar: L.layerGroup().addTo(map),
       osint: L.layerGroup().addTo(map),
       cchl: L.layerGroup().addTo(map),
+      plume: L.layerGroup().addTo(map),
     };
 
     return () => {
@@ -91,35 +98,47 @@ export default function GisMap(props: GisMapProps) {
     };
   }, []);
 
-  // подложка
+  // подложка: CARTO выпилен (требует их API-политику) → keyless Esri Dark Gray
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     if (tileRef.current) map.removeLayer(tileRef.current);
-    const url =
-      props.tile === 'topo'
-        ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-    const sub = props.tile === 'topo' ? 'abc' : 'abcd';
-    const attr =
-      props.tile === 'topo'
-        ? '© OpenTopoMap (CC-BY-SA) | SRTM'
-        : '© OpenStreetMap, © CARTO';
-    tileRef.current = L.tileLayer(url, { subdomains: sub, attribution: attr, maxZoom: 17 });
-    tileRef.current.addTo(map);
-    tileRef.current.bringToBack();
+    if (labelRef.current) map.removeLayer(labelRef.current);
+    if (props.tile === 'topo') {
+      tileRef.current = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        subdomains: 'abc',
+        attribution: '© OpenTopoMap (CC-BY-SA) | SRTM',
+        maxZoom: 17,
+      });
+      tileRef.current.addTo(map);
+      tileRef.current.bringToBack();
+    } else {
+      tileRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Esri, HERE, Garmin, FAO, NOAA, USGS | © OpenStreetMap contributors', maxZoom: 16 },
+      );
+      labelRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 16 },
+      );
+      tileRef.current.addTo(map);
+      labelRef.current.addTo(map);
+      tileRef.current.bringToBack();
+      labelRef.current.bringToBack();
+    }
   }, [props.tile]);
 
-  // THI-точки
+  // THI-точки — на час скраббера (или THImax дня, если часа нет)
   useEffect(() => {
     const lg = layersRef.current?.thi;
     if (!lg) return;
     lg.clearLayers();
-    const { selectedId, onSelectPoint } = props;
+    const { selectedId, onSelectPoint, hourIdx } = props;
     for (const a of Object.values(props.assessments)) {
+      const h = a.hourly[hourIdx];
       const today = a.outlook[0];
-      const v = today?.thiMax;
-      const color = today?.thiClass.color ?? '#8a8a6a';
+      const v = h ? h.thi : today?.thiMax;
+      const color = thiColor(v);
       const sel = a.point.id === selectedId;
       L.circleMarker([a.point.lat, a.point.lon], {
         radius: sel ? 16 : 11,
@@ -130,19 +149,69 @@ export default function GisMap(props: GisMapProps) {
       })
         .on('click', () => onSelectPoint(a.point.id))
         .addTo(lg);
+      const wdir = h?.wdir;
+      // ➤ смотрит на восток (90°): поворот = (направление выноса − 90°) = wdir + 90°
+      const arrow =
+        wdir != null
+          ? `<span style="display:inline-block;transform:rotate(${(wdir + 90) % 360}deg);color:#b8bca8">➤</span> `
+          : '';
       const label = L.divIcon({
         className: '',
         html: `<div style="transform:translate(-50%,-50%);pointer-events:none;white-space:nowrap;
           font:600 10px/1.25 ui-monospace,Consolas,monospace;text-align:center;color:#f2f0e4;
           text-shadow:0 1px 2px #000,0 0 3px #000">${esc(a.point.name)}<br/>
-          <b style="color:${color};font-size:11px">${Number.isFinite(v) ? v.toFixed(0) : '—'}</b></div>`,
+          ${arrow}<b style="color:${color};font-size:11px">${Number.isFinite(v) ? v.toFixed(0) : '—'}</b></div>`,
         iconSize: [0, 0],
       });
       L.marker([a.point.lat, a.point.lon], { icon: label, interactive: false })
         .on('click', () => onSelectPoint(a.point.id))
         .addTo(lg);
     }
-  }, [props.assessments, props.selectedId, props.onSelectPoint]);
+  }, [props.assessments, props.selectedId, props.onSelectPoint, props.hourIdx]);
+
+  // Плюм-слой: аэрозольный вынос из выбранного очага по прогнозному ветру
+  useEffect(() => {
+    const lg = layersRef.current?.plume;
+    if (!lg) return;
+    lg.clearLayers();
+    if (!props.layers.plume) return;
+    const ob = ASF_DEMO_OUTBREAKS[props.outbreakIdx];
+    // ближайшая к очагу точка с почасовым ветром
+    let best: PointAssessment | null = null;
+    let bestD = Infinity;
+    for (const a of Object.values(props.assessments)) {
+      const d = Math.hypot(a.point.lat - ob.lat, a.point.lon - ob.lon);
+      if (d < bestD) {
+        bestD = d;
+        best = a;
+      }
+    }
+    if (!best || best.hourly.length === 0) return;
+    const cells = getPlume(
+      { lat: ob.lat, lon: ob.lon },
+      best.hourly.slice(0, 72),
+      PLUME_PRESETS.generic,
+    );
+    const half = 0.025;
+    for (const c of cells) {
+      L.rectangle(
+        [
+          [c.lat - half, c.lon - half],
+          [c.lat + half, c.lon + half],
+        ],
+        {
+          color: plumeColor(c.dose),
+          weight: 0,
+          fillColor: plumeColor(c.dose),
+          fillOpacity: 0.3 + 0.35 * c.dose,
+        },
+      )
+        .bindTooltip(
+          `аэрозоль-плюм из «${ob.name}»: доза ${(c.dose * 100).toFixed(0)}% от макс. (демо-модель, Gloster-подход)`,
+        )
+        .addTo(lg);
+    }
+  }, [props.layers.plume, props.outbreakIdx, props.assessments]);
 
   // реки
   useEffect(() => {
@@ -192,7 +261,7 @@ export default function GisMap(props: GisMapProps) {
       const rot = s.wdir ?? 0;
       const html = `<div style="transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;white-space:nowrap;
         font:600 11px/1.2 ui-monospace,monospace;color:#e8d9a0;text-shadow:0 1px 2px #000">
-        <span style="display:inline-block;transform:rotate(${180 + rot}deg);color:#e8d9a0">➤</span>
+        <span style="display:inline-block;transform:rotate(${(rot + 90) % 360}deg);color:#e8d9a0">➤</span>
         ${s.temp != null ? s.temp.toFixed(0) + '°' : '—'}/${s.rh != null ? s.rh.toFixed(0) + '%' : '—'}</div>`;
       const icon = L.divIcon({ className: '', html, iconSize: [0, 0] });
       L.marker([s.lat, s.lon], { icon, zIndexOffset: 500 })
@@ -278,7 +347,8 @@ export default function GisMap(props: GisMapProps) {
         <div className="mt-1 border-t border-[#3a4030] pt-1">
           <span className="mr-1 text-[#c0392b]">▨</span>коридор АЧС (дни) ·
           <span className="mx-1 text-[#e8d9a0]">➤</span>METAR ·
-          <span className="mr-1 text-[#69b45f]">◆</span>OSINT MQTT
+          <span className="mr-1 text-[#69b45f]">◆</span>OSINT MQTT ·
+          <span className="ml-1 text-[#e0a636]">▦</span>аэрозоль-плюм
         </div>
       </div>
     </div>

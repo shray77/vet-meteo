@@ -10,10 +10,24 @@ const THRESHOLDS = [
   { v: 90, color: '#c0392b', label: '90' },
 ];
 
-export default function HourlyThiChart({ hourly, dayFilter }: { hourly: HourlyPoint[]; dayFilter?: number }) {
+export default function HourlyThiChart({
+  hourly,
+  dayFilter,
+  hourIdx,
+}: {
+  hourly: HourlyPoint[];
+  dayFilter?: number;
+  /** глобальный час скраббера — рисуем курсор, если он в окне графика */
+  hourIdx?: number;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const points = dayFilter == null ? hourly : hourly.slice(dayFilter * 24, dayFilter * 24 + 24);
   if (points.length === 0) return <div className="p-4 text-sm text-muted-foreground">нет данных</div>;
+  const globalStart = dayFilter == null ? 0 : dayFilter * 24;
+  const cursor =
+    hourIdx != null && hourIdx >= globalStart && hourIdx < globalStart + points.length
+      ? hourIdx - globalStart
+      : null;
 
   const W = 640, H = 180, P = 26;
   const minT = Math.min(...points.map((p) => p.thi)) - 3;
@@ -51,6 +65,13 @@ export default function HourlyThiChart({ hourly, dayFilter }: { hourly: HourlyPo
         {/* THI */}
         <path d={area} fill="#e0a636" opacity="0.12" />
         <path d={path} fill="none" stroke="#f0c674" strokeWidth="1.8" />
+        {/* курсор скраббера */}
+        {cursor != null && (
+          <g>
+            <line x1={x(cursor)} x2={x(cursor)} y1={P} y2={H - P} stroke="#7fbf6f" strokeWidth="1.4" opacity="0.9" />
+            <circle cx={x(cursor)} cy={y(points[cursor].thi)} r="4" fill="none" stroke="#7fbf6f" strokeWidth="1.6" />
+          </g>
+        )}
         {/* перекрестие */}
         {hover != null && (
           <g>

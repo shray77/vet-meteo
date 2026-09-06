@@ -17,7 +17,8 @@ function omUrl(lat: number, lon: number): string {
   const params = new URLSearchParams({
     latitude: lat.toFixed(3),
     longitude: lon.toFixed(3),
-    hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation',
+    hourly:
+      'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,shortwave_radiation,precipitation',
     daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
     timezone: 'Europe/Moscow',
     forecast_days: '8',
@@ -42,6 +43,8 @@ function mapOm(json: any): WeatherBundle {
       temp: +temp.toFixed(1),
       rh: Math.round(rh),
       wind: +(json.hourly.wind_speed_10m?.[i] ?? 0).toFixed(1),
+      wdir: json.hourly.wind_direction_10m?.[i] ?? null,
+      swr: json.hourly.shortwave_radiation?.[i] ?? null,
       precip: +(json.hourly.precipitation?.[i] ?? 0).toFixed(1),
       thi: +thiVal(temp, rh).toFixed(1),
     });

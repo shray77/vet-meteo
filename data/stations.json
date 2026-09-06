@@ -1,0 +1,30 @@
+{
+  "region": "Ростовская область",
+  "bbox": { "minLat": 46.6, "maxLat": 49.5, "minLon": 37.5, "maxLon": 43.8 },
+  "stations": [
+    { "id": "rostov", "name": "Ростов-на-Дону", "lat": 47.23, "lon": 39.72, "alt": 50 },
+    { "id": "taganrog", "name": "Таганрог", "lat": 47.21, "lon": 38.93, "alt": 30 },
+    { "id": "shakhty", "name": "Шахты", "lat": 47.71, "lon": 40.21, "alt": 250 },
+    { "id": "volgodonsk", "name": "Волгодонск", "lat": 47.51, "lon": 42.15, "alt": 60 },
+    { "id": "novocherkassk", "name": "Новочеркасск", "lat": 47.42, "lon": 40.09, "alt": 110 },
+    { "id": "bataysk", "name": "Батайск", "lat": 47.14, "lon": 39.75, "alt": 40 },
+    { "id": "azov", "name": "Азов", "lat": 47.11, "lon": 39.42, "alt": 15 },
+    { "id": "salsk", "name": "Сальск", "lat": 46.48, "lon": 41.54, "alt": 80 },
+    { "id": "millerovo", "name": "Миллерово", "lat": 48.92, "lon": 40.4, "alt": 200 },
+    { "id": "morozovsk", "name": "Морозовск", "lat": 48.35, "lon": 41.83, "alt": 120 },
+    { "id": "belaya_kalitva", "name": "Белая Калитва", "lat": 48.17, "lon": 40.8, "alt": 130 },
+    { "id": "zernograd", "name": "Зерноград", "lat": 46.85, "lon": 40.3, "alt": 90 },
+    { "id": "semikarakorsk", "name": "Семикаракорск", "lat": 47.52, "lon": 40.83, "alt": 60 },
+    { "id": "konstantinovsk", "name": "Константиновск", "lat": 47.63, "lon": 41.09, "alt": 70 },
+    { "id": "vyoshenskaya", "name": "Вёшенская", "lat": 49.62, "lon": 41.72, "alt": 120 },
+    { "id": "ust_donetsk", "name": "Усть-Донецкий", "lat": 47.85, "lon": 40.9, "alt": 80 }
+  ],
+  "metar": [
+    { "icao": "URRP", "name": "Ростов-на-Дону (Платов)", "lat": 47.49, "lon": 39.93 },
+    { "icao": "URWW", "name": "Волгоград (Гумрак)", "lat": 48.78, "lon": 44.34 },
+    { "icao": "URKK", "name": "Краснодар (Пашковский)", "lat": 45.03, "lon": 39.17 },
+    { "icao": "URWI", "name": "Элиста", "lat": 46.38, "lon": 44.33 },
+    { "icao": "UUOO", "name": "Воронеж", "lat": 51.7, "lon": 39.23 },
+    { "icao": "URMT", "name": "Минеральные Воды", "lat": 44.22, "lon": 43.08 }
+  ]
+}
