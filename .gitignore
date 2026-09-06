@@ -24,8 +24,7 @@ examples/
 mini-services/
 Caddyfile
 
-# внутренние скиллы агента (утекли 2026-09-06, вычищено из истории)
-skills/
+# skills/ — намеренно в репо (по решению владельца), НЕ игнорировать
 
 # research workdir (не входит в репо vet-meteo)
 research/
