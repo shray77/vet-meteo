@@ -130,6 +130,7 @@ footer b{color:var(--muted)}
 .leaflet-control-layers-expanded{padding:6px 10px;font-size:11px;letter-spacing:.05em}
 .leaflet-control-layers-expanded label{margin:2px 0}
 .leaflet-control-attribution{background:rgba(16,19,10,.88)!important;color:var(--dim);font-size:9px}
+.leaflet-attribution-flag{display:none!important}
 .leaflet-control-attribution a{color:var(--muted)}
 .leaflet-bar a{background:var(--panel2)!important;color:var(--accent)!important;border-color:var(--border)!important}
 .leaflet-bar a:hover{background:var(--panel3)!important}
@@ -195,7 +196,7 @@ footer b{color:var(--muted)}
     <div id="lfmap"></div>
     <svg id="mapSvg" viewBox="0 0 400 320" role="img" aria-label="Схема станций (фолбэк)" style="display:none"></svg>
     <div class="ob-legend" id="obLegend"></div>
-    <div class="map-cap">подложка © OpenStreetMap/CARTO · круги — станции, ромбы — вспышки болезней (WAHIS/ФСВПС, 2019+; часть координатов — центроид региона) · клик — детали · если CDN недоступен — координатная схема</div>
+    <div class="map-cap">подложки без ключей: Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery (переключатель слоёв) · круги — станции, ромбы — вспышки болезней Ростовской обл. (WAHIS/ФСВПС, 2019+; часть координатов — центроид района) · клик — детали · если CDN недоступен — координатная схема</div>
   </div>
 
   <div class="panel">
@@ -263,7 +264,7 @@ footer b{color:var(--muted)}
 
   <footer>
     <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций ежечасно ~:07 UTC+3 МСК±5 мин, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
-    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Карта: Leaflet + подложка CARTO (при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, 2019+ (часть координатов — центроид региона). Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
+    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
   </footer>
 
 </div>
@@ -401,13 +402,22 @@ function ensureMap(){
   if(typeof L==='undefined'||!$('lfmap'))return false;
   if(!LF.map){
     try{
-      LF.map=L.map('lfmap',{preferCanvas:true});
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-        maxZoom:12,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a>'
-      }).addTo(LF.map);
+      LF.map=L.map('lfmap',{preferCanvas:true,maxZoom:17});
+      /* подложки БЕЗ ключей и вотермарок (CARTO с 2025 требует API key) */
+      const esri=(svc,attr,mz)=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/'+svc+'/MapServer/tile/{z}/{y}/{x}',{maxZoom:mz,attribution:attr});
+      const dark=L.layerGroup([
+        esri('Canvas/World_Dark_Gray_Base','&copy; Esri · HERE · Garmin',16),
+        esri('Canvas/World_Dark_Gray_Reference','',16)
+      ]);
+      const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,subdomains:'abc',attribution:'&copy; <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a> (CC-BY-SA) · SRTM'});
+      const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'});
+      const sat=esri('World_Imagery','&copy; Esri · Maxar · Earthstar Geographics',18);
+      dark.addTo(LF.map);
       LF.st=L.layerGroup().addTo(LF.map);
       LF.ob=L.layerGroup().addTo(LF.map);
-      L.control.layers({},{'Станции · THI':LF.st,'Вспышки · 2019+':LF.ob},{collapsed:false}).addTo(LF.map);
+      L.control.layers({'Тёмная (Esri)':dark,'Топо (OpenTopoMap)':topo,'OSM':osm,'Спутник (Esri)':sat},{'Станции · THI':LF.st,'Вспышки РО · 2019+':LF.ob},{collapsed:false}).addTo(LF.map);
+      /* убираем фирменный флаг из префикса атрибуции Leaflet */
+      if(LF.map.attributionControl)LF.map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
       fetch('data/outbreaks.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.outbreaks){LF.obData=d;renderOutbreaks();}}).catch(()=>{});
     }catch(e){LF.map=null;return false;}
   }

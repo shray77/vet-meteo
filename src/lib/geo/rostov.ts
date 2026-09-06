@@ -1,9 +1,12 @@
 /**
  * Гео-слой Ростовской области.
- * ВНИМАНИЕ: реки, леса и рельеф — СХЕМАТИЧНЫЕ приближения для прототипа.
- * Точки мониторинга, города и КГЛ-районы — реальные координаты.
- * Прод-замена: SRTM 30м для DEM, OSM waterways для рек, ВетИС для очагов.
+ * Рельеф — РЕАЛЬНЫЙ DEM (SRTM, сетка 0.05°, src/lib/geo/dem.json), см. scripts/build_dem.py.
+ * Точки мониторинга и города — реальные координаты и высоты.
+ * Реки и леса — схематичные приближения (прод-замена: OSM waterways).
+ * ВетИС — прод-замена для очагов (демо-очаги помечены в UI).
  */
+
+import demData from './dem.json';
 
 export const RO_BBOX = { minLat: 46.6, maxLat: 49.5, minLon: 37.5, maxLon: 43.8 };
 
@@ -42,24 +45,24 @@ interface FieldPointRo {
   animals: string;
 }
 
-/** 16 точек мониторинга (животноводческая нагрузка — описание условное). */
+/** 16 точек мониторинга (животноводческая нагрузка — описание условное; высоты из SRTM). */
 export const FIELD_POINTS: FieldPointRo[] = [
-  { id: 'rostov', name: 'Ростов-на-Дону', lat: 47.23, lon: 39.72, alt: 50, animals: 'КРС, МРС, птица' },
-  { id: 'taganrog', name: 'Таганрог', lat: 47.21, lon: 38.93, alt: 30, animals: 'МРС, птица' },
-  { id: 'shakhty', name: 'Шахты', lat: 47.71, lon: 40.21, alt: 250, animals: 'КРС, МРС' },
-  { id: 'volgodonsk', name: 'Волгодонск', lat: 47.51, lon: 42.15, alt: 60, animals: 'КРС, свиньи' },
-  { id: 'novocherkassk', name: 'Новочеркасск', lat: 47.42, lon: 40.09, alt: 110, animals: 'КРС, МРС' },
-  { id: 'bataysk', name: 'Батайск', lat: 47.14, lon: 39.75, alt: 40, animals: 'птица, КРС' },
-  { id: 'azov', name: 'Азов', lat: 47.11, lon: 39.42, alt: 15, animals: 'КРС, МРС' },
-  { id: 'salsk', name: 'Сальск', lat: 46.48, lon: 41.54, alt: 80, animals: 'КРС, МРС' },
-  { id: 'millerovo', name: 'Миллерово', lat: 48.92, lon: 40.4, alt: 200, animals: 'КРС, МРС' },
-  { id: 'morozovsk', name: 'Морозовск', lat: 48.35, lon: 41.83, alt: 120, animals: 'КРС' },
-  { id: 'belaya_kalitva', name: 'Белая Калитва', lat: 48.17, lon: 40.8, alt: 130, animals: 'КРС, МРС' },
-  { id: 'zernograd', name: 'Зерноград', lat: 46.85, lon: 40.3, alt: 90, animals: 'КРС, птица' },
-  { id: 'semikarakorsk', name: 'Семикаракорск', lat: 47.52, lon: 40.83, alt: 60, animals: 'КРС, МРС' },
-  { id: 'konstantinovsk', name: 'Константиновск', lat: 47.63, lon: 41.09, alt: 70, animals: 'КРС' },
-  { id: 'vyoshenskaya', name: 'Вёшенская', lat: 49.62, lon: 41.72, alt: 120, animals: 'КРС, МРС' },
-  { id: 'ust_donetsk', name: 'Усть-Донецкий', lat: 47.85, lon: 40.9, alt: 80, animals: 'КРС, МРС' },
+  { id: 'rostov', name: 'Ростов-на-Дону', lat: 47.23, lon: 39.72, alt: 68, animals: 'КРС, МРС, птица' },
+  { id: 'taganrog', name: 'Таганрог', lat: 47.21, lon: 38.93, alt: 41, animals: 'МРС, птица' },
+  { id: 'shakhty', name: 'Шахты', lat: 47.71, lon: 40.21, alt: 117, animals: 'КРС, МРС' },
+  { id: 'volgodonsk', name: 'Волгодонск', lat: 47.51, lon: 42.15, alt: 48, animals: 'КРС, свиньи' },
+  { id: 'novocherkassk', name: 'Новочеркасск', lat: 47.42, lon: 40.09, alt: 88, animals: 'КРС, МРС' },
+  { id: 'bataysk', name: 'Батайск', lat: 47.14, lon: 39.75, alt: 11, animals: 'птица, КРС' },
+  { id: 'azov', name: 'Азов', lat: 47.11, lon: 39.42, alt: 39, animals: 'КРС, МРС' },
+  { id: 'salsk', name: 'Сальск', lat: 46.48, lon: 41.54, alt: 30, animals: 'КРС, МРС' },
+  { id: 'millerovo', name: 'Миллерово', lat: 48.92, lon: 40.4, alt: 131, animals: 'КРС, МРС' },
+  { id: 'morozovsk', name: 'Морозовск', lat: 48.35, lon: 41.83, alt: 78, animals: 'КРС' },
+  { id: 'belaya_kalitva', name: 'Белая Калитва', lat: 48.17, lon: 40.8, alt: 56, animals: 'КРС, МРС' },
+  { id: 'zernograd', name: 'Зерноград', lat: 46.85, lon: 40.3, alt: 84, animals: 'КРС, птица' },
+  { id: 'semikarakorsk', name: 'Семикаракорск', lat: 47.52, lon: 40.83, alt: 13, animals: 'КРС, МРС' },
+  { id: 'konstantinovsk', name: 'Константиновск', lat: 47.63, lon: 41.09, alt: 85, animals: 'КРС' },
+  { id: 'vyoshenskaya', name: 'Вёшенская', lat: 49.62, lon: 41.72, alt: 64, animals: 'КРС, МРС' },
+  { id: 'ust_donetsk', name: 'Усть-Донецкий', lat: 47.85, lon: 40.9, alt: 97, animals: 'КРС, МРС' },
 ];
 
 /** 7 схематичных рек. Прод-замена: OSM waterways. */
@@ -143,26 +146,38 @@ export const FORESTS: ForestPatch[] = [
   },
 ];
 
-function gauss2d(lat: number, lon: number, cl: number, cO: number, sl: number, sO: number): number {
-  const d = ((lat - cl) / sl) ** 2 + ((lon - cO) / sO) ** 2;
-  return Math.exp(-d * 0.5);
+/* ===== Реальный DEM (SRTM 0.05°) ===== */
+
+interface DemGrid {
+  bbox: [number, number, number, number]; // minLat, minLon, maxLat, maxLon
+  step: number;
+  rows: number;
+  cols: number;
+  z: number[][];
 }
 
+const DEM = demData as unknown as DemGrid;
+
 /**
- * Псевдо-DEM (м): Калачская возвышенность, Донская гряда, Ергени,
- * Сальско-Манычская гряда; долины Дона и Кумо-Манычская впадина — понижения.
- * Схематично! Прод-замена: SRTM 1 arc-sec.
+ * Высота (м) из реального SRTM-DEM: билинейная интерполяция сетки 0.05°.
+ * Вне бокса — краевое значение. Источник: AWS Terrain (terrarium z8),
+ * сборка scripts/build_dem.py → src/lib/geo/dem.json.
  */
-export function pseudoDem(lat: number, lon: number): number {
-  let h = 60 + Math.max(0, lat - 46.8) * 55;
-  h += gauss2d(lat, lon, 49.0, 40.4, 0.75, 1.1) * 380;
-  h += gauss2d(lat, lon, 48.35, 40.6, 0.5, 0.9) * 260;
-  h += gauss2d(lat, lon, 47.2, 42.6, 0.55, 1.2) * 200;
-  h += gauss2d(lat, lon, 46.9, 42.2, 0.4, 1.4) * 120;
-  h -= gauss2d(lat, lon, 47.4, 40.9, 0.28, 2.4) * 90;
-  h -= gauss2d(lat, lon, 46.6, 42.6, 0.3, 1.5) * 55;
-  h -= gauss2d(lat, lon, 46.9, 39.3, 0.5, 0.9) * 40;
-  return Math.round(Math.max(2, h));
+export function demElevation(lat: number, lon: number): number {
+  const [minLat, minLon, maxLat, maxLon] = DEM.bbox;
+  const { step, rows, cols, z } = DEM;
+  const c = Math.min(cols - 1, Math.max(0, (lon - minLon) / step));
+  const r = Math.min(rows - 1, Math.max(0, (maxLat - lat) / step));
+  const i = Math.min(rows - 2, Math.floor(r));
+  const j = Math.min(cols - 2, Math.floor(c));
+  const fy = r - i;
+  const fx = c - j;
+  const v =
+    z[i][j] * (1 - fy) * (1 - fx) +
+    z[i + 1][j] * fy * (1 - fx) +
+    z[i][j + 1] * (1 - fy) * fx +
+    z[i + 1][j + 1] * fy * fx;
+  return Math.round(v);
 }
 
 /** ДЕМО-очаги АЧС (вымышленные, помечены в UI). */

@@ -2,6 +2,7 @@
  * Пайплайн оценки: погода → топо-поправки → модели → триггер-лента.
  */
 import type { PointAssessment, TriggerItem } from './types';
+export type { PointAssessment };
 import { FIELD_POINTS, CCHF_DISTRICTS } from './geo/rostov';
 import { topoInfoAt, topoAdjust } from './topo/topo';
 import { thi, thiClass, milkLoss } from './models/thi';
@@ -58,7 +59,7 @@ export async function assessPoint(fp: (typeof FIELD_POINTS)[number]): Promise<Po
     const brd = brdScore({
       tMax: d.tMax, tMin: d.tMin, rhMean: d.rhMean, precip: d.precipSum,
       windMean: d.windMean, coldPool: topo.coldPool, windExposure: topo.windExposure,
-      tempDrop: d.tMean ?? (d.tMax + d.tMin) / 2 - (prev.tMax + prev.tMin) / 2,
+      tempDrop: (d.tMax + d.tMin) / 2 - (prev.tMax + prev.tMin) / 2,
     });
     const ticks = ticksOutlook(dailyAdj.slice(Math.max(0, i - 6), i + 1));
     const cchf = cchfRisk({ endemic, daily: dailyAdj.slice(Math.max(0, i - 6), i + 1), rhMean: d.rhMean, tMean });

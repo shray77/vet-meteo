@@ -81,7 +81,7 @@ export default function StationTable({
         )}
         <div className="mt-1">
           снапшотов в истории: {Object.keys(archive?.history ?? {}).length > 0
-            ? `${Object.keys(archive.history).length} станций × до 72 ч`
+            ? `${Object.keys(archive?.history ?? {}).length} станций × до 72 ч`
             : '— (первые сутки после запуска Actions)'}
         </div>
       </div>

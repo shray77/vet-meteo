@@ -1,10 +1,12 @@
-/** Проверка моделей: плюм, surveillance, ансамбль + ревизия 2026-09-07 (THIadj, HLI, Tw). */
+/** Проверка моделей: плюм, surveillance, ансамбль + ревизия 2026-09-07 (THIadj, HLI, Tw) + DEM 2026-09-08. */
 import { getPlume, PLUME_PRESETS } from '../src/lib/models/plume';
 import { demoSeries, ears, rtCori, kulldorffScan, demoScanData, farrington } from '../src/lib/models/surveillance';
 import { perturbedEnsemble } from '../src/lib/models/ensemble';
 import { thi, thiMader, milkLoss } from '../src/lib/models/thi';
 import { wetBulb, hli, ahlAccumulate, thiPoultry } from '../src/lib/models/advanced';
 import { et0 } from '../src/lib/models/parasites';
+import { demElevation } from '../src/lib/geo/rostov';
+import { slopeAt, coldPoolIndex, windExposure, topoInfoAt } from '../src/lib/topo/topo';
 
 const eq = (name: string, got: number, want: number, eps = 0.15) => {
   const ok = Math.abs(got - want) <= eps;
@@ -55,6 +57,48 @@ eq('thiPoultry(30,60)', thiPoultry(30, 60).value, 0.6 * 30 + 0.4 * wetBulb(30, 6
   const vj = et0(25, 12, 47, 170); // июнь — больше
   console.log(`${vj > v ? 'PASS' : 'FAIL'} et0 июнь > сентябрь: ${vj} > ${v}`);
   if (!(vj > v)) process.exitCode = 1;
+}
+
+/* ==== Реальный DEM (SRTM 0.05°) ==== */
+{
+  // узлы сетки: сверка с финальной сборкой (валидация против SRTM90 — в build_dem.py)
+  eq('DEM Таганрог', demElevation(47.21, 38.93), 14, 3);
+  eq('DEM Батайск', demElevation(47.14, 39.75), 6, 3);
+  eq('DEM Миллерово', demElevation(48.92, 40.4), 144, 3);
+  eq('DEM Семикаракорск (пойма Дона)', demElevation(47.52, 40.83), 8, 3);
+  // билинейность КОДА: ручной расчёт из dem.json vs demElevation (точка между узлами)
+  {
+    const dem = (await import('../src/lib/geo/dem.json')).default as {
+      bbox: number[]; step: number; rows: number; cols: number; z: number[][];
+    };
+    const [minLat, minLon, maxLat] = dem.bbox;
+    const lat = 48.62, lon = 42.34;
+    const r = (maxLat - lat) / dem.step, c = (lon - minLon) / dem.step;
+    const i = Math.floor(r), j = Math.floor(c), fy = r - i, fx = c - j;
+    const manual =
+      dem.z[i][j] * (1 - fy) * (1 - fx) + dem.z[i + 1][j] * fy * (1 - fx) +
+      dem.z[i][j + 1] * (1 - fy) * fx + dem.z[i + 1][j + 1] * fy * fx;
+    eq('DEM билинейность (код vs JSON)', demElevation(lat, lon), Math.round(manual), 0.5);
+  }
+  // уклон: Каменская гряда против Сальских степей
+  {
+    const slopeRidge = slopeAt(48.35, 40.55);
+    const slopePlain = slopeAt(46.5, 42.5);
+    console.log(`PASS DEM уклон гряда=${slopeRidge.toFixed(2)}° степь=${slopePlain.toFixed(2)}° (${slopeRidge > slopePlain ? 'OK' : 'НЕ ОЖИДАЛИ'})`);
+    if (slopeRidge <= slopePlain) process.exitCode = 1;
+  }
+  // индексы в границах
+  const checks: [string, number][] = [
+    ['coldPool', coldPoolIndex(47.3, 40.9)],
+    ['windExposure', windExposure(47.3, 40.9)],
+  ];
+  for (const [n, v] of checks) {
+    const ok = v >= 0 && v <= 1;
+    console.log(`${ok ? 'PASS' : 'FAIL'} DEM ${n}∈[0,1]: ${v}`);
+    if (!ok) process.exitCode = 1;
+  }
+  const info = topoInfoAt(47.3, 40.9);
+  console.log('PASS DEM topoInfo:', JSON.stringify(info));
 }
 
 /* Плюм и surveillance — прежние проверки */

@@ -1,34 +1,31 @@
 /**
- * Топографический движок поверх псевдо-DEM.
+ * Топографический движок на РЕАЛЬНОМ SRTM-DEM (0.05°, src/lib/geo/dem.json).
  * Уклон/экспозиция, индекс застоя холодного воздуха (корытообразные
  * понижения), ветровая экспозиция и микроклиматические поправки к T/RH/ветру.
- * Все величины — приближения прототипа.
+ * Рельеф настоящий, физика поправок — приближения прототипа.
  */
-import { pseudoDem } from '../geo/rostov';
+import { demElevation } from '../geo/rostov';
 import type { TopoInfo } from '../types';
 
-const step = 0.05; // ~5.5 км по широте
+const step = 0.05; // ~5.5 км по широте — совпадает с шагом DEM-сетки
+
+/** Расстояние на юг-север между узлами (м) и длина градуса долготы (м). */
+const dLat = step * 111_320;
+const dLonAt = (lat: number) => step * 1.0 * 111_320 * Math.cos((lat * Math.PI) / 180);
 
 export function slopeAt(lat: number, lon: number): number {
-  const hC = pseudoDem(lat, lon);
-  const hN = pseudoDem(lat + step, lon);
-  const hS = pseudoDem(lat - step, lon);
-  const hE = pseudoDem(lat, lon + step * 1.4);
-  const hW = pseudoDem(lat, lon - step * 1.4);
-  const ns = hN - hS;
-  const ew = hE - hW;
-  const dist = step * 111000;
-  const slopeRad = Math.atan(Math.hypot(ns, ew * 0.76) / (2 * dist));
+  const ns = demElevation(lat + step, lon) - demElevation(lat - step, lon);
+  const dLon = dLonAt(lat);
+  const ew = demElevation(lat, lon + step) - demElevation(lat, lon - step);
+  const runNS = 2 * dLat;
+  const runEW = 2 * dLon;
+  const slopeRad = Math.atan(Math.hypot(ns / runNS, ew / runEW));
   return (slopeRad * 180) / Math.PI;
 }
 
 export function aspectAt(lat: number, lon: number): { deg: number; label: string } {
-  const hN = pseudoDem(lat + step, lon);
-  const hS = pseudoDem(lat - step, lon);
-  const hE = pseudoDem(lat, lon + step * 1.4);
-  const hW = pseudoDem(lat, lon - step * 1.4);
-  const ns = hN - hS;
-  const ew = hE - hW;
+  const ns = demElevation(lat + step, lon) - demElevation(lat - step, lon);
+  const ew = demElevation(lat, lon + step) - demElevation(lat, lon - step);
   let deg = (Math.atan2(ew, ns) * 180) / Math.PI;
   if (deg < 0) deg += 360;
   const labels = [
@@ -46,14 +43,14 @@ export function aspectAt(lat: number, lon: number): { deg: number; label: string
  * 0 (нет застоя) … 1 (корыто, ночью +2° риск заморозка/сырости).
  */
 export function coldPoolIndex(lat: number, lon: number): number {
-  const hC = pseudoDem(lat, lon);
+  const hC = demElevation(lat, lon);
   const ring = [
     [lat + step, lon], [lat - step, lon],
-    [lat, lon + step * 1.4], [lat, lon - step * 1.4],
-    [lat + step, lon + step * 1.4], [lat - step, lon - step * 1.4],
-    [lat + step, lon - step * 1.4], [lat - step, lon + step * 1.4],
+    [lat, lon + step], [lat, lon - step],
+    [lat + step, lon + step], [lat - step, lon - step],
+    [lat + step, lon - step], [lat - step, lon + step],
   ];
-  const around = ring.reduce((s, [a, b]) => s + pseudoDem(a, b), 0) / ring.length;
+  const around = ring.reduce((s, [a, b]) => s + demElevation(a, b), 0) / ring.length;
   const concavity = Math.max(0, (around - hC) / 40);
   const slope = slopeAt(lat, lon) / 4;
   return Math.max(0, Math.min(1, concavity * (1 - Math.min(1, slope))));
@@ -64,10 +61,10 @@ export function coldPoolIndex(lat: number, lon: number): number {
  * ложбины и подветренные склоны закрыты.
  */
 export function windExposure(lat: number, lon: number, prevailingDeg = 240): number {
-  const hC = pseudoDem(lat, lon);
-  const upwind = pseudoDem(
+  const hC = demElevation(lat, lon);
+  const upwind = demElevation(
     lat - step * Math.cos((prevailingDeg * Math.PI) / 180),
-    lon - step * 1.4 * Math.sin((prevailingDeg * Math.PI) / 180) * 0.76,
+    lon - step * Math.cos((lat * Math.PI) / 180) * Math.sin((prevailingDeg * Math.PI) / 180),
   );
   const openness = Math.max(0, (hC - upwind + 60) / 120);
   const slope = slopeAt(lat, lon) / 5;

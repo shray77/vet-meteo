@@ -4,7 +4,7 @@
  * Источник: research-бэкап WAHIS/ФСВПС (в git-истории:
  *   git show d5bc1da:research/shray77/outbreaks_backup.json > /tmp/outbreaks_backup.json
  *   node tools/curate_outbreaks.mjs /tmp/outbreaks_backup.json
- * Фильтр: Ростовская + соседние области/края/республики, дата >= 2019,
+ * Фильтр: ТОЛЬКО Ростовская область, дата >= 2019,
  * без хронических технических (лейкоз, нозематоз, варрооз) — они не «вспышки».
  * Выход: docs/data/outbreaks.json (компактные ключи, ~35 КБ).
  */
@@ -20,11 +20,7 @@ if (!src) {
 }
 const backup = JSON.parse(readFileSync(src, 'utf8'));
 
-const REGIONS = [
-  'Ростовская', 'Краснодарский', 'Ставропольский', 'Волгоградская', 'Воронежская',
-  'Республика Калмыкия', 'Республика Дагестан', 'Чеченская', 'Кабардино-Балкарская',
-  'Северная Осетия', 'Республика Адыгея', 'Ингушская', 'Карачаево-Черкесская',
-];
+const REGIONS = ['Ростовская'];
 const EXCLUDE = new Set(['leukosis', 'nosemosis', 'varroosis']);
 const SHORT = {
   asf: 'АЧС', hpai: 'ГПАП', fmd: 'Ящур', rabies: 'Бешенство', brucellosis: 'Бруцеллёз',
@@ -57,7 +53,7 @@ recs.sort((a, b) => (a.dt < b.dt ? 1 : -1));
 
 const out = {
   updated: new Date().toISOString().slice(0, 10),
-  note: 'WAHIS/ФСВПС, Ростовская обл. + соседи, с 2019 г. (курация бэкапа; координаты части записей — центроид региона)',
+  note: 'WAHIS/ФСВПС, только Ростовская обл., с 2019 г. (курация бэкапа; координаты части записей — центроид района)',
   total: recs.length,
   diseases: [...new Set(recs.map((r) => r.n))],
   outbreaks: recs,

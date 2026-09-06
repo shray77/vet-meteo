@@ -154,7 +154,7 @@ export function dirofilaria(daily: { tMax: number; tMin: number }[]): DiroResult
   const infective = hdu30 >= 130;
   return {
     hdu8d: +hdu.toFixed(0),
-    hdu30,
+    hdu30d: hdu30,
     infective,
     note: infective
       ? 'прогноз ≥130 HDU: передача Dirofilaria возможна — макролектические профилактики по схеме'
