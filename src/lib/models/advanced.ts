@@ -7,9 +7,13 @@
 
 /* ============ 1. Психрометрия ============ */
 
-/** Температура смоченного термометра (Stull 2011, приближение, RH≥5%). */
+/**
+ * Температура смоченного термометра (Stull 2011, приближение, RH 5–99%).
+ * ФИКС 2026-09-07: RH подаётся в ПРОЦЕНТАХ (5–99), а не долей — раньше
+ * делился на 100, и Tw занижался на ~10° (ломало THI птицы).
+ */
 export function wetBulb(t: number, rh: number): number {
-  const r = Math.max(5, Math.min(100, rh)) / 100;
+  const r = Math.max(5, Math.min(99, rh));
   const v =
     t * Math.atan(0.151977 * Math.sqrt(r + 8.313659)) +
     Math.atan(t + r) -
@@ -82,20 +86,22 @@ export function coldStress(t: number, vMs: number): ColdStress {
   return { wci, zone: 'сильный', note: 'сильный: LCT выше факта — новорождённые телята в домики, ветрозащита' };
 }
 
-/* ============ 4. HLI / AHL (тепловая нагрузка откорма) ============ */
+/* ============ 4. HLI / AHL (Gaughan et al. 2008, JAS 86:329) ============ */
 
 /**
- * HLI (Heat Load Index, по мотивам Gaughan & Mader 2008 — упрощение):
- * HLI = THI + 0.35·(TG − Tdb) − 1.4·WS,
- * где TG (глобус-термометр) ≈ Tdb + 0.016·SWR.
- * AHL — накопленная тепловая нагрузка: приращение HLI>77 с релаксацией 2%/ч.
+ * HLI (Heat Load Index, Gaughan et al. 2008) — каноническая двухчастная форма:
+ *   BG ≥ 25°C: HLI = 8.62 + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS)
+ *   BG < 25°C: HLI = 1.3  + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS)
+ * BG — температура чёрного глобуса (°C), RH — %, WS — м/с.
+ * Глобус оцениваем: BG ≈ Tdb + 0.016·SWR (солнечная радиация, Вт/м²).
+ * Ревизия 2026-09-07: было «THI + 0.35·(TG−Tdb) − 1.4·WS» — не HLI;
+ * заменено на опубликованную формулу.
  */
 export function hli(tdb: number, rh: number, swrWm2: number, windMs: number): number {
-  const f = 1.8 * tdb + 32;
-  const thi = f - (0.55 - 0.0055 * rh) * (1.8 * tdb - 26);
-  const tg = tdb + 0.016 * (swrWm2 ?? 0);
-  const h = thi + 0.35 * (tg - tdb) - 1.4 * Math.max(0, windMs);
-  return +h.toFixed(1);
+  const bg = tdb + 0.016 * Math.max(0, swrWm2 ?? 0);
+  const ws = Math.max(0, Math.min(18, windMs));
+  const base = (bg >= 25 ? 8.62 : 1.3) + 0.38 * rh + 1.55 * bg - 0.5 * ws;
+  return +(base + Math.exp(2.4 - ws)).toFixed(1);
 }
 
 export interface AhlResult {
@@ -103,14 +109,20 @@ export interface AhlResult {
   zone: string;
 }
 
-/** AHL по почасовому ряду (упрощение Gaughan: порог 77, распад 0.98/ч). */
-export function ahlAccumulate(hourly: { hli: number }[]): AhlResult {
+/**
+ * AHL (накопленная тепловая нагрузка) по почасовому ряду HLI.
+ * Порог накопления: HLI > 78 (кормовой скот в умеренном климате;
+ * акклиматизированный/тропический — 86). Распад 2%/ч — упрощение.
+ * Зоны — по категориям Gaughan (термонейтраль <1; далее нарастание).
+ */
+export function ahlAccumulate(hourly: { hli: number }[], threshold = 78): AhlResult {
   let a = 0;
-  for (const h of hourly) a = Math.max(0, 0.98 * a + Math.max(0, h.hli - 77));
-  if (a < 30) return { ahl: +a.toFixed(0), zone: 'фон' };
-  if (a < 80) return { ahl: +a.toFixed(0), zone: 'накопление: тени + вода + ночная вентиляция' };
-  if (a < 150) return { ahl: +a.toFixed(0), zone: 'высокое: ожидаем падение поедания' };
-  return { ahl: +a.toFixed(0), zone: 'опасное: сдвинуть кормления на ночь, охлаждение' };
+  for (const h of hourly) a = Math.max(0, 0.98 * a + Math.max(0, h.hli - threshold));
+  if (a < 1) return { ahl: +a.toFixed(1), zone: 'термонейтрально' };
+  if (a < 10) return { ahl: +a.toFixed(1), zone: 'лёгкое накопление: тени + вода' };
+  if (a < 50) return { ahl: +a.toFixed(0), zone: 'накопление: вода + ночная вентиляция' };
+  if (a < 100) return { ahl: +a.toFixed(0), zone: 'высокое: падение поедания' };
+  return { ahl: +a.toFixed(0), zone: 'опасное: кормления на ночь, охлаждение' };
 }
 
 /* ============ 5. Дирофиляриоз (HDU) ============ */

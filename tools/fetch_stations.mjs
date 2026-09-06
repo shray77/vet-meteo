@@ -23,6 +23,10 @@ const thi = (t, rh) => {
   return f - (0.55 - 0.0055 * rh) * (1.8 * t - 26);
 };
 
+/** THIadj (Mader et al. 2006): ветер обезветривает, радиация догружает. */
+const thiMader = (t, rh, wind, swr) =>
+  4.51 + thi(t, rh) - 1.992 * Math.max(0, wind) + 0.0068 * Math.max(0, swr || 0);
+
 function rhFromTd(t, td) {
   const es = 6.112 * Math.exp((17.67 * t) / (t + 243.5));
   const e = 6.112 * Math.exp((17.67 * td) / (td + 243.5));
@@ -76,7 +80,7 @@ async function fetchOpenMeteo() {
     latitude: lats,
     longitude: lons,
     current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation',
-    hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation',
+    hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,shortwave_radiation',
     daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
     timezone: 'Europe/Moscow',
     forecast_days: '7',
@@ -114,6 +118,11 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
     const rh = cur.relative_humidity_2m ?? 60;
     const wind = cur.wind_speed_10m ?? 0;
     const wdir = cur.wind_direction_10m ?? null;
+    // солнечная радиация текущего часа (ночь → 0/отсутствует)
+    const hTimes = w.hourly?.time ?? [];
+    const hIdx = cur.time ? hTimes.indexOf(String(cur.time).slice(0, 13) + ':00') : -1;
+    const swr = hIdx >= 0 ? (w.hourly?.shortwave_radiation?.[hIdx] ?? 0) : 0;
+    const thiAdj = thiMader(t, rh, wind, swr);
     const precip24 = (w.hourly?.precipitation ?? []).slice(0, 24).reduce((a, b) => a + (b ?? 0), 0);
     const daily = w.daily ?? {};
     let thiMax7 = -999;
@@ -142,13 +151,14 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
       wdir,
       precip24: +precip24.toFixed(1),
       thi: +thi(t, rh).toFixed(1),
+      thiAdj: +thiAdj.toFixed(1),
       thiMaxToday: +(thi(daily.temperature_2m_max?.[0] ?? t, Math.max(30, (daily.relative_humidity_2m_mean?.[0] ?? 60) - 12))).toFixed(1),
       thiMax7: +thiMax7.toFixed(1),
       brd,
       source: 'open-meteo',
     };
     stations.push(row);
-    snapRow[st.id] = [row.t, row.rh, row.wind, row.thi];
+    snapRow[st.id] = [row.t, row.rh, row.wind, row.thi, row.thiAdj];
   });
 } else {
   console.error('Open-Meteo недоступен, срез будет пустым по метео (METAR остаётся)');

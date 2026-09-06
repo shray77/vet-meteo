@@ -61,11 +61,23 @@ export function cchfRisk(input: {
   return { risk, label };
 }
 
-/** ET₀ (мм/сут) по Hargreaves (упрощённо, без Rx). */
-export function et0(tMax: number, tMin: number, lat: number): number {
+/**
+ * ET₀ (мм/сут) по Hargreaves: 0.0023·Ra·(Tmax−Tmin)^0.5·(Tmean+17.8).
+ * Ra — внеатмосферная радиация (мм/сут экв.) по FAO-56 (астрономия:
+ * dr, δ, ωs; Gsc=0.0820 МДж/м²·мин). Раньше Ra был грубой синусоидой
+ * по месяцу — завышал осенью; заменено на точную формулу.
+ * doy — день года (по умолчанию текущий).
+ */
+export function et0(tMax: number, tMin: number, lat: number, doy?: number): number {
+  const J = doy ?? Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000);
+  const φ = (lat * Math.PI) / 180;
+  const dr = 1 + 0.033 * Math.cos((2 * Math.PI * J) / 365);
+  const δ = 0.409 * Math.sin((2 * Math.PI * J) / 365 - 1.39);
+  const cosωs = -Math.tan(φ) * Math.tan(δ);
+  const ωs = Math.acos(Math.max(-1, Math.min(1, cosωs)));
+  // МДж/м²·сут → мм/сут (эквивалент испарения, λ≈2.45 МДж/кг)
+  const Ra = ((24 * 60 * 0.082 * dr) / Math.PI) * (ωs * Math.sin(φ) * Math.sin(δ) + Math.cos(φ) * Math.cos(δ) * Math.sin(ωs)) / 2.45;
   const tMean = (tMax + tMin) / 2;
-  const month = new Date().getMonth() + 1;
-  const Ra = 15 + 10 * Math.sin(((month - 3) / 12) * 2 * Math.PI) * Math.cos((lat / 90) * 1.2);
   return +Math.max(0, 0.0023 * Ra * (tMax - tMin) ** 0.5 * (tMean + 17.8)).toFixed(2);
 }
 

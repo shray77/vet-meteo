@@ -1,0 +1,60 @@
+name: weekly-digest
+
+# Недельный итог по архиву снапшотов (воскресенье 06:47 МСК):
+# часы THI>72/80, средний/максимальный THI по станциям → data/weekly.json
+# + сводка шага + Telegram (если заданы секреты).
+on:
+  schedule:
+    - cron: '47 3 * * 0' # воскресенье, 03:47 UTC = 06:47 МСК
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-digest
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Расчёт недельного дайджеста
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: node tools/weekly.mjs
+
+      - name: Сводка (МСК)
+        run: |
+          echo '### Недельный дайджест · время МСК' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          node -e "const w=require('./data/weekly.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('расчёт:',msk(w.generatedAt),'МСК · с',w.from,'по',w.to);for(const d of w.digest)console.log(d)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Коммит
+        run: |
+          git config user.name "vet-meteo-bot"
+          git config user.email "actions@github.com"
+          git add data/weekly.json
+          if git diff --cached --quiet; then
+            echo "нет изменений"
+          else
+            git commit -m "data: недельный дайджест $(TZ='Europe/Moscow' date '+%d.%m %H:%M') МСК [skip ci]"
+            ok=0
+            for i in 1 2 3 4 5; do
+              if git pull --rebase --autostash origin main && git push; then ok=1; break; fi
+              echo "попытка пуша $i не прошла, ждём $((i*15)) с"
+              sleep $((i*15))
+            done
+            [ "$ok" = 1 ] || { echo "пуш не прошёл за 5 попыток"; exit 1; }
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

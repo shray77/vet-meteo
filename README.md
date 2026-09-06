@@ -4,6 +4,8 @@
 
 [![stations](https://github.com/shray77/vet-meteo/actions/workflows/stations.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/stations.yml)
 [![daily-outlook](https://github.com/shray77/vet-meteo/actions/workflows/daily-outlook.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/daily-outlook.yml)
+[![weekly-digest](https://github.com/shray77/vet-meteo/actions/workflows/weekly-digest.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/weekly-digest.yml)
+[![pages](https://github.com/shray77/vet-meteo/actions/workflows/pages.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Стек: **Next.js 16 · TypeScript · Tailwind · Leaflet**. Живые данные без единого API-ключа:
@@ -20,12 +22,15 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
 
 ## Дашборд на GitHub Pages
 
-**https://shray77.github.io/vet-meteo/** — лёгкий «пост диспетчера» без сборки
-и зависимостей: один статический файл `docs/index.html` (GitHub Pages → ветка
-`main`, папка `/docs`, `.nojekyll`). Читает те же `data/*.json` с
+**https://shray77.github.io/vet-meteo/** — «пост диспетчера»: статический файл
+`docs/index.html` (GitHub Pages → ветка `main`, папка `/docs`, `.nojekyll`) плюс
+кураторный `docs/data/outbreaks.json`. Читает те же `data/*.json` с
 `raw.githubusercontent.com` прямо из браузера юзера, автообновление каждые 5 минут.
-Внутри: KPI-сводка, радар-карта станций (цвет = THI), таблица со спарклайнами THI
-за 72 ч, тепловая сетка прогноза на 7 дней, METAR и суточный дайджест. Обновляется
+Внутри: KPI-сводка, **интерактивная карта Leaflet** (тёмная подложка CARTO, круги
+станций с THI-раскраской и попапами, слой вспышек WAHIS/ФСВПС 2019+ с переключателем;
+при недоступности CDN — фолбэк на координатную схему), таблица со спарклайнами THI
+за 72 ч, тепловая сетка прогноза на 7 дней, **график истории THI/THIadj за 72 ч**
+по выбранной станции, METAR и суточный дайджест. Время — везде МСК. Обновляется
 сам — по мере того как Actions коммитят новые срезы в `data/`.
 
 ## Пайплайн данных
@@ -33,12 +38,13 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
 ```
                         ┌─────────────────────────────────────────────┐
                         │  GITHUB ACTIONS (этот репозиторий)          │
-                        │  stations.yml — ежечасно (7-я минута):    │
-                        │   METAR (NOAA) + Open-Meteo × 16 станций    │
-                        │   → data/latest.json                        │
-                        │   → data/snapshots/YYYY-MM-DD.json          │
+                        │  stations.yml — ежечасно (7-я мин UTC):   │
+                        │   METAR + Open-Meteo × 16 станций + SWR     │
+                        │   → latest.json + snapshots/ + TG-алерты    │
                         │  daily-outlook.yml — 06:17 МСК:             │
-                        │   7-дневный дайджест → data/outlook.json    │
+                        │   7-дневный дайджест → outlook.json + TG    │
+                        │  weekly-digest.yml — вс 06:47 МСК:          │
+                        │   итоги недели → weekly.json + TG           │
                         └──────────────────┬──────────────────────────┘
                                            │ raw.githubusercontent (CDN, без ключа)
 веб-приложение (Next.js) ◄─────────────────┘
@@ -51,6 +57,23 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
 Три режима честно помечены бейджами: `live Open-Meteo` / `Open-Meteo через прокси` /
 `синтетика (sandbox)` — фолбэк-цепочка не врёт о происхождении данных.
 
+## Telegram-алерты (опционально)
+
+Все воркфлоу умеют слать сводки в Telegram, но без секретов тихо пропускают
+(воркфлоу остаётся зелёным). Чтобы включить:
+
+1. Создай бота у **@BotFather** → получишь токен вида `123456:ABC-DEF...`.
+2. Напиши боту любое сообщение (или добавь его в группу и напиши туда).
+3. Узнай свой `chat_id` у **@userinfobot** (для группы — отрицательный).
+4. В **Settings → Secrets and variables → Actions → New repository secret** добавь:
+   - `TG_BOT_TOKEN` — токен бота;
+   - `TG_CHAT_ID` — id чата.
+
+Что приходит: ежечасные алерты по фронту — THI≥80 / THIadj≥80 / BRD≥75
+(дедупликация: срабатывание → эскалация → «снято», состояние в
+`data/alerts-state.json`), суточный дайджест 06:17 МСК и итоги недели
+в 06:47 воскресенья.
+
 ## Математические модели
 
 ### Биоклимат (src/lib/models/)
@@ -58,13 +81,22 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
 | Модель | Формула / идея | Пороги |
 |---|---|---|
 | **THI КРС** (NRC—Yousef) | `THI = (1.8·T+32) − (0.55−0.0055·RH)(1.8·T−26)` | 68 / 72 / 80 / 90 |
-| Потери удоя | Ravagnolo: `−0.25 кг/ед THI > 72` | |
-| **THI птицы** | `0.6·Tdb + 0.4·Twb` (Twb — Stull 2011) | 70 / 75 / 80 |
+| **THIadj** (Mader 2006) | `4.51 + THI − 1.992·WS + 0.0068·SR` (SR — Вт/м², WS — м/с) | те же, дневные условия |
+| Потери удоя | Ravagnolo & Misztal 2000: `−0.2 кг/ед THI > 72` | |
+| **THI птицы** | `0.6·Tdb + 0.4·Twb` (Twb — Stull 2011, RH в %) | 70 / 75 / 80 |
 | **THI свиноматок** | NRC-THI, сдвинутые пороги | 72 / 78 / 84 |
 | **WCI** холод КРС | `(10.45 + 10√v − v)(33 − T)`, v м/с | 600 / 1000 / 1400 |
-| **HLI** (по мотивам Gaughan&Mader) | `THI + 0.35·(TG−Tdb) − 1.4·WS`, `TG = Tdb + 0.016·SWR` | 70 / 80 / 90 |
-| **AHL** накопление | `AHL_t = 0.98·AHL_{t−1} + max(0, HLI−77)` | 30 / 80 / 150 |
+| **HLI** (Gaughan et al. 2008) | `BG≥25°: 8.62 + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS)`; `BG<25°: 1.3 + …`; `BG ≈ Tdb + 0.016·SWR` | 78 (86 аккл.) |
+| **AHL** накопление | `AHL_t = 0.98·AHL_{t−1} + max(0, HLI−78)`, зоны Gaughan | 1 / 10 / 50 / 100 |
 | VPD | Tetens: `es(T)(1 − RH/100)` | гигрометрия клещей/миджсов |
+
+> Ревизия моделей 2026-09-07 (сверка с первоисточниками): добавлен THIadj
+> (Mader et al. 2006, JAS 84:712) — считается в CI и на дашборде; потери удоя
+> исправлены 0.25→0.2 кг/ед (Ravagnolo & Misztal 2000, JDS 83:109); HLI заменён
+> на каноническую двухчастную формулу Gaughan et al. 2008 (JAS 86:329), порог
+> AHL 77→78; фиксирован Tw (Stull 2011: RH в процентах, а не долях — раньше
+> занижал на ~10° и ломал THI птицы); ET₀ Hargreaves теперь с астрономическим
+> Ra по FAO-56 (была грубая синусоида по месяцу). Опорные точки — `scripts/test_models.ts`.
 
 ### Трансмиссивные/инвазионные (parasites.ts, advanced.ts)
 
@@ -151,11 +183,15 @@ src/lib/archive.ts          чтение data/ с raw.githubusercontent
 src/lib/assessment.ts       пайплайн: погода → топо → модели → триггеры
 src/components/vetradar/    GisMap · TimeScrubber · RightPanel(7 вкладок) · StationTable ·
                             EnsembleChart · SurveillancePanel · StressBlocks · Gauges · …
-tools/fetch_stations.mjs    hourly-опрос для Actions
+tools/fetch_stations.mjs    hourly-опрос для Actions (THI + THIadj Mader)
 tools/outlook.mjs           суточный дайджест
-.github/workflows/           stations.yml · daily-outlook.yml
-data/                        latest.json · snapshots/ · stations.json (генерится Actions)
-docs/                        статический дашборд GitHub Pages (index.html, без сборки)
+tools/alerts.mjs            Telegram-алерты по фронту (THI/THIadj/BRD)
+tools/weekly.mjs            недельный итог по архиву снапшотов
+tools/curate_outbreaks.mjs  курация вспышек WAHIS/ФСВПС → docs/data/
+.github/workflows/           stations · daily-outlook · weekly-digest · pages
+data/                        latest.json · snapshots/ · stations.json · alerts-state.json
+                             (генерится Actions)
+docs/                        статический дашборд GitHub Pages + кураторные данные вспышек
 ```
 
 ## Дисклеймер

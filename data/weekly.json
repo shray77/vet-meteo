@@ -1,0 +1,155 @@
+{
+ "generatedAt": "2026-09-06T18:32:35.514Z",
+ "from": "2026-09-06",
+ "to": "2026-09-06",
+ "stations": [
+  {
+   "id": "salsk",
+   "name": "Сальск",
+   "hours": 3,
+   "thiMean": 69.1,
+   "thiMax": 72.9,
+   "hot72": 1,
+   "hot80": 0
+  },
+  {
+   "id": "zernograd",
+   "name": "Зерноград",
+   "hours": 3,
+   "thiMean": 64.8,
+   "thiMax": 66.9,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "vyoshenskaya",
+   "name": "Вёшенская",
+   "hours": 3,
+   "thiMean": 64.9,
+   "thiMax": 66.9,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "millerovo",
+   "name": "Миллерово",
+   "hours": 3,
+   "thiMean": 64.3,
+   "thiMax": 66.7,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "taganrog",
+   "name": "Таганрог",
+   "hours": 3,
+   "thiMean": 65.7,
+   "thiMax": 66.6,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "volgodonsk",
+   "name": "Волгодонск",
+   "hours": 3,
+   "thiMean": 64.8,
+   "thiMax": 66.5,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "bataysk",
+   "name": "Батайск",
+   "hours": 3,
+   "thiMean": 65.5,
+   "thiMax": 66,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "semikarakorsk",
+   "name": "Семикаракорск",
+   "hours": 3,
+   "thiMean": 64.9,
+   "thiMax": 65.7,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "azov",
+   "name": "Азов",
+   "hours": 3,
+   "thiMean": 65.2,
+   "thiMax": 65.4,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "rostov",
+   "name": "Ростов-на-Дону",
+   "hours": 3,
+   "thiMean": 64.8,
+   "thiMax": 65.2,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "konstantinovsk",
+   "name": "Константиновск",
+   "hours": 3,
+   "thiMean": 64,
+   "thiMax": 65,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "belaya_kalitva",
+   "name": "Белая Калитва",
+   "hours": 3,
+   "thiMean": 63.9,
+   "thiMax": 64.5,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "novocherkassk",
+   "name": "Новочеркасск",
+   "hours": 3,
+   "thiMean": 63.5,
+   "thiMax": 64,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "ust_donetsk",
+   "name": "Усть-Донецкий",
+   "hours": 3,
+   "thiMean": 63.3,
+   "thiMax": 64,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "morozovsk",
+   "name": "Морозовск",
+   "hours": 3,
+   "thiMean": 63.3,
+   "thiMax": 63.7,
+   "hot72": 0,
+   "hot80": 0
+  },
+  {
+   "id": "shakhty",
+   "name": "Шахты",
+   "hours": 3,
+   "thiMean": 63,
+   "thiMax": 63.6,
+   "hot72": 0,
+   "hot80": 0
+  }
+ ],
+ "digest": [
+  "Сальск: 1 ч THI>72 (макс 72,9) за 3 ч наблюдений",
+  "покрытие архива: 1 дн из 7 (2026-09-06)"
+ ]
+}

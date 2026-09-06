@@ -1,11 +1,12 @@
 name: stations
 
 # Опрос метеостанций Ростовской области:
-# METAR (NOAA) + Open-Meteo current/hourly/daily → THI и индексы
-# → коммит среза в data/ (latest.json + snapshots/ГГГГ-ММ-ДД.json).
+# METAR (NOAA) + Open-Meteo (current/hourly/daily + shortwave) → THI и THIadj (Mader 2006)
+# → data/latest.json + data/snapshots/ГГГГ-ММ-ДД.json + Telegram-алерты по фронту.
+# Время в сводках и коммитах — МСК (Europe/Moscow, UTC+3).
 on:
   schedule:
-    - cron: '7 * * * *' # каждый час, 7-я минута — вне пика нагрузки GitHub (top-of-hour delays)
+    - cron: '7 * * * *' # каждый час, 7-я минута — вне пика нагрузки GitHub
   workflow_dispatch: {}
 
 permissions:
@@ -20,20 +21,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Опрос станций (METAR + Open-Meteo)
+      - name: Опрос станций (METAR + Open-Meteo + THIadj)
         run: node tools/fetch_stations.mjs
 
-      - name: Сводка
+      - name: Telegram-алерты (THI≥80 / THIadj≥80 / BRD≥75)
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: node tools/alerts.mjs
+
+      - name: Сводка (МСК)
         run: |
-          echo '### Срез станций' >> $GITHUB_STEP_SUMMARY
+          echo '### Срез станций · время МСК' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          node -e "const l=require('./data/latest.json');console.log(l.generatedAt, l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20), 'T='+s.t, 'THI='+s.thi, 'THImax7='+s.thiMax7, 'BRD='+s.brd)" >> $GITHUB_STEP_SUMMARY
+          node -e "const l=require('./data/latest.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('срез:',msk(l.generatedAt),'МСК ·',l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20),'T='+s.t,'THI='+s.thi,'adj='+(s.thiAdj!=null?s.thiAdj:'—'),'THImax7='+s.thiMax7,'BRD='+s.brd)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Коммит среза
@@ -44,14 +51,15 @@ jobs:
           if git diff --cached --quiet; then
             echo "нет изменений — не коммитим"
           else
-            git commit -m "data: срез станций $(date -u +'%Y-%m-%d %H:%M') UTC [skip ci]"
+            git commit -m "data: срез станций $(TZ='Europe/Moscow' date '+%d.%m %H:%M') МСК [skip ci]"
             ok=0
-            for i in 1 2 3; do
-              if git pull --rebase origin main && git push; then ok=1; break; fi
-              echo "попытка пуша $i не прошла, ждём 15 с"
-              sleep 15
+            for i in 1 2 3 4 5; do
+              # --autostash: гонки двух воркфлоу больше не роняют шаг (было: cannot pull with rebase)
+              if git pull --rebase --autostash origin main && git push; then ok=1; break; fi
+              echo "попытка пуша $i не прошла, ждём $((i*15)) с"
+              sleep $((i*15))
             done
-            [ "$ok" = 1 ] || { echo "пуш не прошёл за 3 попытки"; exit 1; }
+            [ "$ok" = 1 ] || { echo "пуш не прошёл за 5 попыток"; exit 1; }
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

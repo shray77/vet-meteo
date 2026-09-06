@@ -1,10 +1,11 @@
 name: daily-outlook
 
-# Суточный дайджест: 7-дневный прогноз THI по всем станциям,
+# Суточный дайджест (03:17 UTC = 06:17 МСК): 7-дневный прогноз THI по всем станциям,
 # дни превышения 72/80, осадки, вчерашняя фактура из снапшотов → data/outlook.json.
+# Итог дублируется в Telegram (если заданы секреты TG_BOT_TOKEN/TG_CHAT_ID).
 on:
   schedule:
-    - cron: '17 3 * * *' # 03:17 UTC = 06:17 МСК (вне пика часа)
+    - cron: '17 3 * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -19,21 +20,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Расчёт 7-дневного дайджеста
         run: node tools/outlook.mjs
 
-      - name: Сводка
+      - name: Сводка (МСК)
         run: |
-          echo '### Дайджест 7 дней' >> $GITHUB_STEP_SUMMARY
+          echo '### Дайджест 7 дней · время МСК' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          node -e "const o=require('./data/outlook.json');for(const d of o.digest)console.log(d)" >> $GITHUB_STEP_SUMMARY
+          node -e "const o=require('./data/outlook.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('расчёт:',msk(o.generatedAt),'МСК');for(const d of o.digest)console.log(d)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Дайджест в Telegram
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          if [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
+            echo "Telegram не настроен (секреты TG_BOT_TOKEN/TG_CHAT_ID) — пропускаем"
+            exit 0
+          fi
+          node -e '
+            const o = require("./data/outlook.json");
+            const msk = new Date(o.generatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour12: false });
+            const lines = ["\u{1F4C5} <b>ВЕТРАДАР-61 \u00b7 суточный дайджест</b> \u00b7 " + msk + " МСК", ""];
+            if (o.digest && o.digest.length) { lines.push("<b>Фокусы 7 дней:</b>"); for (const d of o.digest) lines.push("\u2022 " + d); }
+            else lines.push("превышений THI 72/80 за 7 дней не прогнозируется");
+            const top = (o.stations || []).slice().sort((a, b) => b.thiMax7 - a.thiMax7)[0];
+            if (top) lines.push("", "Пик жары: " + top.name + " \u2014 THImax " + top.thiMax7);
+            fetch(`https://api.telegram.org/bot${process.env.TG_BOT_TOKEN}/sendMessage`, {
+              method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ chat_id: process.env.TG_CHAT_ID, text: lines.join("\n"), parse_mode: "HTML", disable_web_page_preview: true }),
+            }).then(r => console.log("TG:", r.ok ? "отправлено" : "HTTP " + r.status));
+          '
 
       - name: Коммит
         run: |
@@ -43,14 +67,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "нет изменений"
           else
-            git commit -m "data: суточный дайджест $(date -u +'%Y-%m-%d') [skip ci]"
+            git commit -m "data: суточный дайджест $(TZ='Europe/Moscow' date '+%d.%m %H:%M') МСК [skip ci]"
             ok=0
-            for i in 1 2 3; do
-              if git pull --rebase origin main && git push; then ok=1; break; fi
-              echo "попытка пуша $i не прошла, ждём 15 с"
-              sleep 15
+            for i in 1 2 3 4 5; do
+              if git pull --rebase --autostash origin main && git push; then ok=1; break; fi
+              echo "попытка пуша $i не прошла, ждём $((i*15)) с"
+              sleep $((i*15))
             done
-            [ "$ok" = 1 ] || { echo "пуш не прошёл за 3 попытки"; exit 1; }
+            [ "$ok" = 1 ] || { echo "пуш не прошёл за 5 попыток"; exit 1; }
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
