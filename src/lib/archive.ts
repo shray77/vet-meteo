@@ -38,7 +38,7 @@ async function fetchHistory(): Promise<{ history: Record<string, ArchiveRow[]>; 
   const days: string[] = [];
   const now = new Date();
   const jobs: Promise<void>[] = [];
-  for (let d = 1; d <= 3; d++) {
+  for (let d = 0; d <= 3; d++) { // сегодня + 3 дня назад
     const day = new Date(now.getTime() - d * 86_400_000).toISOString().slice(0, 10);
     days.push(day);
     jobs.push(
@@ -53,9 +53,9 @@ async function fetchHistory(): Promise<{ history: Record<string, ArchiveRow[]>; 
         for (const entry of json.hours) {
           const s = entry.s ?? {};
           for (const [id, arr] of Object.entries<any[]>(s)) {
-            if (!Array.isArray(arr) || arr.length < 5) continue;
+            if (!Array.isArray(arr) || arr.length < 4) continue; // [T, RH, wind, THI]
             if (!history[id]) history[id] = [];
-            history[id].push([entry.ts, arr[0], arr[1], arr[2], arr[4]]);
+            history[id].push([entry.ts, arr[0], arr[1], arr[2], arr[3]]);
           }
         }
       })(),
