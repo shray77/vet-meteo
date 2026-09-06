@@ -1,0 +1,39 @@
+name: pages
+
+# Деплой GitHub Pages (каталог docs/) через Actions.
+# Замена legacy-билдеру, который падал с generic «Page build failed».
+# Плюс: логи деплоя видны прямо в Actions, как у остальных воркфлоу.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**']
+  workflow_dispatch: {}
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - name: Артефакт сайта (docs/)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Деплой
+        id: deployment
+        uses: actions/deploy-pages@v4
