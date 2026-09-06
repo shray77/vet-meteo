@@ -5,7 +5,7 @@ name: stations
 # → коммит среза в data/ (latest.json + snapshots/ГГГГ-ММ-ДД.json).
 on:
   schedule:
-    - cron: '0 * * * *' # каждый час (UTC)
+    - cron: '7 * * * *' # каждый час, 7-я минута — вне пика нагрузки GitHub (top-of-hour delays)
   workflow_dispatch: {}
 
 permissions:
@@ -45,8 +45,13 @@ jobs:
             echo "нет изменений — не коммитим"
           else
             git commit -m "data: срез станций $(date -u +'%Y-%m-%d %H:%M') UTC [skip ci]"
-            git pull --rebase origin main
-            git push
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase origin main && git push; then ok=1; break; fi
+              echo "попытка пуша $i не прошла, ждём 15 с"
+              sleep 15
+            done
+            [ "$ok" = 1 ] || { echo "пуш не прошёл за 3 попытки"; exit 1; }
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

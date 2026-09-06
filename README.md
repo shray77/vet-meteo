@@ -18,16 +18,26 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
 перекрашивается по выбранному часу), справа — панель из 7 вкладок:
 Сводка · Прогноз · Станции · Ансамбль · АЧС · Надзор · OSINT.
 
+## Дашборд на GitHub Pages
+
+**https://shray77.github.io/vet-meteo/** — лёгкий «пост диспетчера» без сборки
+и зависимостей: один статический файл `docs/index.html` (GitHub Pages → ветка
+`main`, папка `/docs`, `.nojekyll`). Читает те же `data/*.json` с
+`raw.githubusercontent.com` прямо из браузера юзера, автообновление каждые 5 минут.
+Внутри: KPI-сводка, радар-карта станций (цвет = THI), таблица со спарклайнами THI
+за 72 ч, тепловая сетка прогноза на 7 дней, METAR и суточный дайджест. Обновляется
+сам — по мере того как Actions коммитят новые срезы в `data/`.
+
 ## Пайплайн данных
 
 ```
                         ┌─────────────────────────────────────────────┐
                         │  GITHUB ACTIONS (этот репозиторий)          │
-                        │  stations.yml — каждый час:                 │
+                        │  stations.yml — ежечасно (7-я минута):    │
                         │   METAR (NOAA) + Open-Meteo × 16 станций    │
                         │   → data/latest.json                        │
                         │   → data/snapshots/YYYY-MM-DD.json          │
-                        │  daily-outlook.yml — 06:00 МСК:             │
+                        │  daily-outlook.yml — 06:17 МСК:             │
                         │   7-дневный дайджест → data/outlook.json    │
                         └──────────────────┬──────────────────────────┘
                                            │ raw.githubusercontent (CDN, без ключа)
@@ -102,7 +112,7 @@ Open-Meteo **ensemble API** (ECMWF IFS 0.25°, 51 член, без ключа): 
 ## Кучка метеостанций + GitHub Actions
 
 `data/stations.json` — реестр (16 станций + 6 METAR-аэропортов). `stations.yml` ходит
-каждый час: METAR + мульти-точечный Open-Meteo запрос → THI/BRD-лайт → коммит
+каждый час (7-я минута — вне пика нагрузки GitHub): METAR + мульти-точечный Open-Meteo запрос → THI/BRD-лайт → коммит
 `data/latest.json` + почасовой снапшот дня. История хранится 30 дней, потом режется.
 Сайт читает архив напрямую с `raw.githubusercontent.com` (CDN, CORS `*`) — бейдж
 «АРХИВ Actions ✓» и спарклайны THI на вкладке «Станции».
@@ -145,6 +155,7 @@ tools/fetch_stations.mjs    hourly-опрос для Actions
 tools/outlook.mjs           суточный дайджест
 .github/workflows/           stations.yml · daily-outlook.yml
 data/                        latest.json · snapshots/ · stations.json (генерится Actions)
+docs/                        статический дашборд GitHub Pages (index.html, без сборки)
 ```
 
 ## Дисклеймер

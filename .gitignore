@@ -15,21 +15,24 @@ server.log
 .env.*
 !.env.example
 
-# db
-db/*.db
-db/*.db-journal
-
-# sandbox internals
+# sandbox internals — НИКОГДА в репо (однажды утекли, см. clean history)
 .zscripts/
 agent-ctx/
 download/
 upload/
-mini-services/*/
 examples/
+mini-services/
 Caddyfile
+
+# внутренние скиллы агента (утекли 2026-09-06, вычищено из истории)
+skills/
 
 # research workdir (не входит в репо vet-meteo)
 research/
+
+# sandbox-тесты и БД
+tests/
+db/
 
 # os
 .DS_Store
