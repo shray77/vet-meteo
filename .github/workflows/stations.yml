@@ -45,6 +45,7 @@ jobs:
             echo "нет изменений — не коммитим"
           else
             git commit -m "data: срез станций $(date -u +'%Y-%m-%d %H:%M') UTC [skip ci]"
+            git pull --rebase origin main
             git push
           fi
         env:

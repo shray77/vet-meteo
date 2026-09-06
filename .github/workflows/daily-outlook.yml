@@ -44,6 +44,7 @@ jobs:
             echo "нет изменений"
           else
             git commit -m "data: суточный дайджест $(date -u +'%Y-%m-%d') [skip ci]"
+            git pull --rebase origin main
             git push
           fi
         env:
