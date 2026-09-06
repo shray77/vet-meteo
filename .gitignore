@@ -34,3 +34,6 @@ research/
 # os
 .DS_Store
 Thumbs.db
+
+# внутренний журнал агентов
+worklog.md
