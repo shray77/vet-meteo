@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+bun.lockb
+
+# Next.js
+/.next/
+/out/
+/build/
+.next/standalone/
+
+# Production
+dist/
+
+# Env files
+.env
+.env*.local
+.env.development
+.env.production
+.env.local
+
+# PWA
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+public/worker-*.js.map
+
+# Python (legacy)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+dev.log
+server.log
+
+# Database
+*.db
+*.db-journal
+db/*.db
+
+# Prisma
+prisma/migrations/dev/
+
+# Caches
+.cache/
+.turbo/
+.eslintcache
+
+# Scraping temp
+scripts/scrape/.cache/
+scripts/scrape/.cache
+scripts/scrape/raw-html/
+scripts/scrape/raw-html
+
+# Misc
+.zscripts/
+worklog.md

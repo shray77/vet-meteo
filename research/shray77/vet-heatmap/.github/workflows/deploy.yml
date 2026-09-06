@@ -1,0 +1,124 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run unit tests
+        # Critical pure functions: filters, disease normalization, color mapping,
+        # outbreak merge/dedup. Catches regressions like the §1.1/§1.2 bugs
+        # (wrong field names) before they reach production.
+        run: bun run test
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Build static export
+        env:
+          NODE_ENV: production
+          # CI=true ensures basePath /vet-heatmap is used
+          CI: "true"
+        run: bun run build
+
+      - name: Add .nojekyll (bypass Jekyll for _next/ paths)
+        run: touch out/.nojekyll
+
+      - name: Verify build output
+        run: |
+          ls -la out/
+          ls -la out/data/
+          ls -la out/icons/
+          test -f out/index.html || (echo "MISSING index.html" && exit 1)
+          test -f out/data/outbreaks.json || (echo "MISSING outbreaks.json" && exit 1)
+          test -f out/data/russia_regions.geojson || (echo "MISSING regions.geojson" && exit 1)
+          test -f out/vetkart-sw.js || (echo "MISSING vetkart-sw.js" && exit 1)
+          test -f out/manifest.webmanifest || (echo "MISSING manifest" && exit 1)
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy_out.outputs.page_url }}
+    steps:
+      # GitHub Pages backend occasionally returns "Deployment failed, try
+      # again later" for transient reasons (artifact propagation delay,
+      # internal queue hiccups, OIDC token issuance). Retry up to 3 times
+      # with 30s → 60s backoff. Usually succeeds on attempt 2.
+
+      - name: Deploy attempt 1
+        id: deploy_1
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait 30s before retry
+        if: steps.deploy_1.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy attempt 2
+        id: deploy_2
+        if: steps.deploy_1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait 60s before final retry
+        if: steps.deploy_2.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy attempt 3 (final)
+        id: deploy_3
+        if: steps.deploy_2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        # No continue-on-error here — if this fails, the job fails.
+
+      - name: Resolve deploy output (whichever attempt succeeded)
+        id: deploy_out
+        if: always()
+        run: |
+          if [ "${{ steps.deploy_1.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy_1.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+            echo "✓ Deployed on attempt 1"
+          elif [ "${{ steps.deploy_2.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy_2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+            echo "✓ Deployed on attempt 2"
+          elif [ "${{ steps.deploy_3.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy_3.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+            echo "✓ Deployed on attempt 3"
+          else
+            echo "✗ All 3 deploy attempts failed"
+            exit 1
+          fi

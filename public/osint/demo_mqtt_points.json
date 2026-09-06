@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "note": "ДЕМО-ВЫГРУЗКА: вымышленные адреса, баннеры собраны по мотивам публичных Shodan-результатов. Не для операционного использования.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "ip": "91.219.000.000", "port": 1883, "org": "LLC START", "provider": "demo", "label": "MQTT broker", "banner": "Mosquitto 1.6 weather-station home/esp8266 temp", "weatherLike": true },
+      "geometry": { "type": "Point", "coordinates": [39.72, 47.21] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ip": "185.104.000.000", "port": 1883, "org": "Miranda", "provider": "demo", "label": "MQTT broker", "banner": "mosqPub weather/sensor/bme280 temperature humidity", "weatherLike": true },
+      "geometry": { "type": "Point", "coordinates": [40.2, 47.7] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ip": "212.192.000.000", "port": 1884, "org": "SINET", "provider": "demo", "label": "Mosquitto", "banner": "MQTT broker dht22 greenhouse farm/zone1", "weatherLike": true },
+      "geometry": { "type": "Point", "coordinates": [41.5, 46.9] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ip": "46.161.000.000", "port": 1883, "org": "BalticServers", "provider": "demo", "label": "MQTT", "banner": "smarthome hub devices/17 state", "weatherLike": false },
+      "geometry": { "type": "Point", "coordinates": [42.1, 47.4] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "ip": "5.101.000.000", "port": 1883, "org": "PetersService", "provider": "demo", "label": "EMQX", "banner": "onex homeassistant sensor/attic", "weatherLike": false },
+      "geometry": { "type": "Point", "coordinates": [40.9, 47.8] }
+    }
+  ]
+}

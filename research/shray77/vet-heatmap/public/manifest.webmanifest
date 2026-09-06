@@ -1,0 +1,43 @@
+{
+  "name": "ВетКарта — эпизоотическая обстановка России",
+  "short_name": "ВетКарта",
+  "description": "Профессиональный ветеринарный инструмент: карта вспышек болезней животных, зоны риска, калькулятор карантина.",
+  "start_url": "/vet-heatmap/",
+  "scope": "/vet-heatmap/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FAFBFC",
+  "theme_color": "#1B5E20",
+  "lang": "ru-RU",
+  "dir": "ltr",
+  "categories": ["medical", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/vet-heatmap/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/vet-heatmap/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/vet-heatmap/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Калькулятор карантина",
+      "short_name": "Карантин",
+      "description": "Расчёт дат карантина по болезни",
+      "url": "/vet-heatmap/?action=calculator",
+      "icons": [{ "src": "/vet-heatmap/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
