@@ -2,7 +2,8 @@ name: stations
 
 # Опрос метеостанций Ростовской области:
 # METAR (NOAA) + Open-Meteo (current/hourly/daily + shortwave) → THI и THIadj (Mader 2006)
-# → data/latest.json + data/snapshots/ГГГГ-ММ-ДД.json + Telegram-алерты по фронту.
+# → data/latest.json + data/forecast.json (часовой прогноз 48 ч, из тех же ответов — без доп. запросов)
+# + data/snapshots/ГГГГ-ММ-ДД.json + Telegram-алерты по фронту.
 # Время в сводках и коммитах — МСК (Europe/Moscow, UTC+3).
 on:
   schedule:
@@ -43,7 +44,7 @@ jobs:
         run: |
           echo '### Срез станций · время МСК' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          node -e "const l=require('./data/latest.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('срез:',msk(l.generatedAt),'МСК ·',l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20),'T='+s.t,'THI='+s.thi,'adj='+(s.thiAdj!=null?s.thiAdj:'—'),'THImax7='+s.thiMax7,'BRD='+s.brd)" >> $GITHUB_STEP_SUMMARY
+          node -e "const l=require('./data/latest.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('срез:',msk(l.generatedAt),'МСК ·',l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20),'T='+s.t,'THI='+s.thi,'adj='+(s.thiAdj!=null?s.thiAdj:'—'),'THImax7='+s.thiMax7,'BRD='+s.brd);const fs=require('fs');if(fs.existsSync('./data/forecast.json')){const f=require('./data/forecast.json');console.log('прогноз 48ч:',msk(f.generatedAt),'МСК · от '+f.h0+' МСК · '+f.stations.length+' станций · часов: '+f.hours)}else{console.log('прогноз 48ч: НЕ собран')}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Коммит среза

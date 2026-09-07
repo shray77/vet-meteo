@@ -143,6 +143,21 @@ footer b{color:var(--muted)}
 /* ── история THI ───────────────────── */
 #histCanvas{width:100%;height:180px;display:block}
 .hist-select{font:inherit;font-size:11px;background:var(--panel3);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:2px 6px;letter-spacing:.04em;cursor:pointer}
+
+/* ── прогноз 48 ч ───────────────── */
+#fcCanvas{width:100%;height:200px;display:block}
+.fc-win{padding:3px 0 3px 14px;position:relative;font-size:12px;border-bottom:1px solid var(--border2)}
+.fc-win:last-child{border-bottom:0}
+.fc-win::before{content:"■";position:absolute;left:0;font-size:8px;top:5px}
+.fc-win.l3::before{color:var(--z3fg)} .fc-win.l4::before{color:var(--z4fg)}
+.fc-win .fc-peak{color:var(--accent);font-weight:700}
+
+/* ── тайм-машина карты ──────────────── */
+.tm-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--border2);background:var(--panel2)}
+.tm-label{font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.tm-note{font-size:10px;color:var(--muted);margin-left:4px}
+.btn.tm{padding:3px 9px}
+.btn.tm.on{background:var(--z1bg);color:var(--z1fg);border-color:#2a4a26}
 </style>
 </head>
 <body>
@@ -171,6 +186,7 @@ footer b{color:var(--muted)}
       <span class="badge" id="archiveBadge">архив: …</span>
       <span class="badge" id="metarBadge">METAR: …</span>
       <span class="badge" id="nextBadge">след. срез ~:07</span>
+      <span class="badge" id="fcBadge">прогноз 48ч: …</span>
     </div>
     <div class="h-right">
       <span id="updated">—</span>
@@ -184,7 +200,7 @@ footer b{color:var(--muted)}
 
   <div class="kpis" id="kpis">
     <div class="kpi neut"><div class="k-l">THI макс сейчас</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
-    <div class="kpi good"><div class="k-l">станций в стрессе</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">THI ≥ 72 из 16</div></div>
+    <div class="kpi good"><div class="k-l">станций в стрессе</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">THI ≥ 72 · все станции</div></div>
     <div class="kpi hot"><div class="k-l">жара за 7 дней</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
     <div class="kpi crit"><div class="k-l">дней THI&gt;72 (прогноз)</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
     <div class="kpi neut"><div class="k-l">осадки 24 ч макс</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
@@ -192,7 +208,17 @@ footer b{color:var(--muted)}
   </div>
 
   <div class="panel">
-    <div class="p-h"><b>КАРТА · РОСТОВСКАЯ ОБЛ.</b><span>16 станций · цвет/радиус = THI · ромбы — вспышки</span><span class="right" id="mapRight"></span></div>
+    <div class="p-h"><b>КАРТА · РОСТОВСКАЯ ОБЛ.</b><span id="mapSub">станции · цвет/радиус = THI · ромбы — вспышки</span><span class="right" id="mapRight"></span></div>
+    <div class="tm-bar" id="tmBar">
+      <span class="tm-label">время</span>
+      <button class="btn tm on" data-off="0">сейчас</button>
+      <button class="btn tm" data-off="3">+3 ч</button>
+      <button class="btn tm" data-off="6">+6 ч</button>
+      <button class="btn tm" data-off="12">+12 ч</button>
+      <button class="btn tm" data-off="24">+24 ч</button>
+      <button class="btn tm" data-off="48">+48 ч</button>
+      <span class="tm-note" id="tmNote">текущий срез</span>
+    </div>
     <div id="lfmap"></div>
     <svg id="mapSvg" viewBox="0 0 400 320" role="img" aria-label="Схема станций (фолбэк)" style="display:none"></svg>
     <div class="ob-legend" id="obLegend"></div>
@@ -224,6 +250,23 @@ footer b{color:var(--muted)}
         <span><i style="background:var(--z4bg)"></i>≥80 — сильный стресс</span>
         <span style="margin-left:auto">BRD — риск бронхопневмонии телят, %</span>
       </div>
+  </div>
+
+  <div class="panel">
+    <div class="p-h"><b>ПРОГНОЗ · 48 Ч ЧАС ЗА ЧАСОМ</b><span>Open-Meteo hourly · THI / THIadj / осадки</span>
+      <select id="fcSel" class="hist-select" title="станция"></select>
+      <span class="right" id="fcRight"></span></div>
+    <div class="p-b" style="padding:8px 12px 2px">
+      <canvas id="fcCanvas" width="1400" height="200"></canvas>
+    </div>
+    <div class="p-b" id="fcWindows" style="padding:2px 12px 8px"></div>
+    <div class="legend">
+      <span><i style="background:var(--z3fg);height:2px;margin-bottom:3px"></i>THI прогноз</span>
+      <span><i style="background:var(--accent);height:2px;margin-bottom:3px;opacity:.75"></i>THIadj (Mader)</span>
+      <span><i style="background:rgba(127,191,217,.5);height:6px"></i>осадки, мм/ч</span>
+      <span>заливка — окна THI&gt;72 / &gt;80 · вертикаль — разделитель суток</span>
+      <span style="margin-left:auto" id="fcMeta"></span>
+    </div>
   </div>
 
   <div class="panel">
@@ -263,16 +306,17 @@ footer b{color:var(--muted)}
   </div>
 
   <footer>
-    <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций ежечасно ~:07 UTC+3 МСК±5 мин, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
-    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
+    <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — 3×/час ~:07/:27/:47 МСК, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
+    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
   </footer>
 
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="console.warn('Leaflet CDN недоступен — включаю схему-фолбэк')"></script>
 <script>
 'use strict';
-const RAW='https://raw.githubusercontent.com/shray77/vet-meteo/main/data';
-const S={latest:null,outlook:null,geo:null,snaps:[],sort:{k:'thi',dir:-1}};
+/* ?raw=… — точка данных для локальных тестов, напр. ?raw=http://localhost:8000/data */
+const RAW=new URLSearchParams(location.search).get('raw')||'https://raw.githubusercontent.com/shray77/vet-meteo/main/data';
+const S={latest:null,outlook:null,geo:null,snaps:[],forecast:null,tmOff:0,sort:{k:'thi',dir:-1}};
 
 /* ── utils ─────────────────────────────── */
 const $=id=>document.getElementById(id);
@@ -294,12 +338,13 @@ async function loadAll(){
   const btn=$('refreshBtn'); if(btn)btn.disabled=true;
   $('errBanner').style.display='none';
   const errs=[];
-  const [latest,outlook,geo]=await Promise.all([
+  const [latest,outlook,geo,forecast]=await Promise.all([
     jget(RAW+'/latest.json').catch(()=>{errs.push('latest.json');return null;}),
     jget(RAW+'/outlook.json').catch(()=>{errs.push('outlook.json');return null;}),
-    jget(RAW+'/stations.json').catch(()=>{errs.push('stations.json');return null;})
+    jget(RAW+'/stations.json').catch(()=>{errs.push('stations.json');return null;}),
+    jget(RAW+'/forecast.json').catch(()=>null)
   ]);
-  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo;
+  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast;
   const days=[]; const now=new Date();
   for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5)));
   const snaps=await Promise.all(days.map(dd=>jget(RAW+'/snapshots/'+dd+'.json').catch(()=>null)));
@@ -364,6 +409,13 @@ function renderHeader(){
   let nh=nowM.getUTCHours();
   if(nm==null){nm=7;nh=(nh+1)%24;}
   $('nextBadge').textContent='след. срез ~'+pad((nh+3)%24)+':'+pad(nm)+' МСК';
+  const Fc=S.forecast,fb=$('fcBadge');
+  if(Fc){
+    const fm=agoMin(Fc.generatedAt);
+    if(fm<75){fb.className='badge ok';fb.textContent='прогноз 48ч: живой';}
+    else if(fm<1440){fb.className='badge warn';fb.textContent='прогноз 48ч: '+ago(Fc.generatedAt);}
+    else{fb.className='badge bad';fb.textContent='прогноз 48ч: устарел '+ago(Fc.generatedAt);}
+  }else{fb.className='badge';fb.textContent='прогноз 48ч: —';}
   $('updated').textContent='срез '+hhmm(L.generatedAt)+' · обновлено '+ago(L.generatedAt);
 }
 function updateAges(){if(S.latest)$('updated').textContent='срез '+hhmm(S.latest.generatedAt)+' · обновлено '+ago(S.latest.generatedAt);}
@@ -382,11 +434,11 @@ function renderKPIs(){
     setKPI(k[5],fmt(wp.wind)+' м/с',wp.name+' · '+wdir2c(wp.wdir),'neut','neut');
     const pr=st.reduce((a,b)=>(b.precip24||0)>(a.precip24||0)?b:a);
     setKPI(k[4],fmt(pr.precip24||0,0)+' мм',(pr.precip24||0)?pr.name:'осадков нет','neut',(pr.precip24||0)>10?'good':'neut');
+    const hot=st.reduce((a,b)=>b.thiMax7>a.thiMax7?b:a);
+    setKPI(k[2],fmt(hot.thiMax7),hot.name+' · пик 7 дней','hot','hot');
   }
   if(O){
     const os=O.stations||[];
-    const hot=os.reduce((a,b)=>b.thiMax7>a.thiMax7?b:a);
-    setKPI(k[2],fmt(hot.thiMax7),hot.name+' · пик 7 дней','hot','hot');
     const d72=os.reduce((a,b)=>b.days72>a.days72?b:a);
     setKPI(k[3],d72.days72+' дн',d72.days72?d72.name+' · превышение THI 72':'превышений не ждём','crit',d72.days72>0?'crit':'good');
   }
@@ -442,31 +494,58 @@ function renderOutbreaks(){
   $('obLegend').innerHTML=Object.entries(counts).sort((a,b)=>b[1].c-a[1].c).map(([n,v])=>
     '<span><i class="ob-dot" style="background:'+v.col+'"></i>'+n+' ('+v.c+')</span>').join('');
 }
+/* станции с учётом сдвига тайм-машины: fc=true → значения прогноза на +k ч */
+function effStations(){
+  const st=(S.latest&&S.latest.stations)||[];
+  const off=S.tmOff,F=S.forecast,m={};
+  if(off>0&&F&&F.h0)for(const f of (F.stations||[]))m[f.id]=f;
+  return st.map(s=>{
+    const f=m[s.id],arr=f&&(f.thi||[]);
+    if(!arr||!arr.length)return{s,fc:false,k:0,thi:s.thi,adj:s.thiAdj,t:s.t,rh:s.rh,wind:s.wind,wdir:s.wdir,pr:s.precip24};
+    const k=Math.min(off,arr.length-1);
+    return{s,fc:true,k,thi:arr[k],adj:(f.adj||[])[k]!=null?(f.adj||[])[k]:null,t:(f.t||[])[k],rh:(f.rh||[])[k],wind:(f.wind||[])[k],wdir:(f.wd||[])[k],pr:(f.pr||[])[k]||0};
+  });
+}
 function renderMap(){
   const Lv=S.latest;
   if(!Lv)return;
+  const eff=effStations();
+  const anyFc=eff.some(e=>e.fc);
   if(ensureMap()){
     $('lfmap').style.display='block';$('mapSvg').style.display='none';
     LF.st.clearLayers();
-    const st=Lv.stations||[];
-    const top=[...st].sort((a,b)=>b.thi-a.thi).slice(0,3);
-    for(const s of st){
-      const z=zone(s.thi);
-      const rad=Math.max(6,Math.min(13,6+(s.thi-64)/3.2));
+    const top=[...eff].sort((a,b)=>b.thi-a.thi).slice(0,3);
+    for(const e of eff){
+      const s=e.s,z=zone(e.thi);
+      const rad=Math.max(6,Math.min(13,6+(e.thi-64)/3.2));
       const m=L.circleMarker([s.lat,s.lon],{radius:rad,color:'#0b0d08',weight:1,fillColor:HEXZ[z-1],fillOpacity:.88});
-      m.bindPopup('<b>'+s.name+'</b> · THI '+fmt(s.thi)+(s.thiAdj!=null?' · adj '+fmt(s.thiAdj):'')+
-        '<br>T '+fmt(s.t)+' °C · RH '+fmt(s.rh,0)+' % · ветер '+fmt(s.wind)+' м/с '+wdir2c(s.wdir)+
-        '<br>THI макс сег '+fmt(s.thiMaxToday)+' · 7 дн '+fmt(s.thiMax7)+
-        '<br>BRD-риск '+(s.brd==null?'—':fmt(s.brd,0))+' % · осадки 24 ч '+fmt(s.precip24)+' мм'+
-        '<br><span class="source-tag">'+s.source+' · срез '+hhmm(Lv.generatedAt)+'</span>');
-      if(top.find(t=>t.id===s.id))m.bindTooltip(s.name,{direction:'top',className:'lf-tip'});
+      let pop;
+      if(e.fc){
+        const hh=addH(S.forecast.h0,e.k).slice(11,16);
+        pop='<b>'+s.name+'</b> · ПРОГНОЗ +'+e.k+' ч ('+hh+' МСК)'+
+          '<br>THI '+fmt(e.thi)+(e.adj!=null?' · adj '+fmt(e.adj):'')+
+          '<br>T '+fmt(e.t)+' °C · RH '+fmt(e.rh,0)+' % · ветер '+fmt(e.wind)+' м/с '+wdir2c(e.wdir)+
+          '<br>осадки за час '+fmt(e.pr)+' мм'+
+          '<br><span class="source-tag">open-meteo hourly · расчёт '+hhmm(S.forecast.generatedAt)+'</span>';
+      }else{
+        pop='<b>'+s.name+'</b> · THI '+fmt(s.thi)+(s.thiAdj!=null?' · adj '+fmt(s.thiAdj):'')+
+          '<br>T '+fmt(s.t)+' °C · RH '+fmt(s.rh,0)+' % · ветер '+fmt(s.wind)+' м/с '+wdir2c(s.wdir)+
+          '<br>THI макс сег '+fmt(s.thiMaxToday)+' · 7 дн '+fmt(s.thiMax7)+
+          '<br>BRD-риск '+(s.brd==null?'—':fmt(s.brd,0))+' % · осадки 24 ч '+fmt(s.precip24)+' мм'+
+          '<br><span class="source-tag">'+s.source+' · срез '+hhmm(Lv.generatedAt)+'</span>';
+      }
+      m.bindPopup(pop);
+      if(top.find(t=>t.s.id===s.id))m.bindTooltip(s.name,{direction:'top',className:'lf-tip'});
       LF.st.addLayer(m);
     }
-    if(!LF.fit&&st.length){LF.map.fitBounds(L.latLngBounds(st.map(s=>[s.lat,s.lon])).pad(0.08));LF.fit=true;}
-    $('mapRight').textContent='срез '+hhmm(Lv.generatedAt);
+    if(!LF.fit&&eff.length){LF.map.fitBounds(L.latLngBounds(eff.map(e=>[e.s.lat,e.s.lon])).pad(0.08));LF.fit=true;}
+    $('mapSub').textContent=eff.length+' станций · цвет/радиус = '+(anyFc?'прогноз THI':'THI')+' · ромбы — вспышки';
+    $('mapRight').textContent=anyFc?('прогноз +'+S.tmOff+' ч · '+addH(S.forecast.h0,S.tmOff).slice(11,16)+' МСК'):('срез '+hhmm(Lv.generatedAt));
+    $('tmNote').textContent=anyFc?('прогноз от среза '+hhmm(S.forecast.generatedAt)):(S.tmOff>0?'прогноз недоступен — текущий срез':'текущий срез');
   }else{
     $('lfmap').style.display='none';$('mapSvg').style.display='block';
     renderMapSvg();
+    $('tmNote').textContent='схема-фолбэк: тайм-машина — только на Leaflet-карте';
   }
 }
 
@@ -570,6 +649,7 @@ function renderHeat(){
 }
 
 /* ── METAR + дайджест ──────────────────── */
+const METAR_RO=new Set(['URRP']); /* Платов — единственный аэродром внутри РО, остальные — ориентиры */
 function renderMetar(){
   const L=S.latest,ml=$('metarList');
   if(!L||!(L.metar||[]).length){ml.innerHTML='<span class="small-dim">нет данных</span>';return;}
@@ -578,6 +658,7 @@ function renderMetar(){
     +'<span>T='+fmt(m.t,0)+'°C</span><span>RH='+fmt(m.rh,0)+'%</span>'
     +'<span>ветер '+fmt(m.wspd,0)+' м/с '+wdir2c(m.wdir)+'</span>'
     +(m.raw?'<span class="small-dim">'+m.raw+'</span>':'')
+    +(METAR_RO.has(m.icao)?'':'<span class="small-dim">· вне РО, ориентир</span>')
     +'</div>'
   ).join('');
   $('metarRight').textContent=L.metar.length+' записей';
@@ -672,7 +753,160 @@ function renderHist(){
 }
 $('histSel').addEventListener('change',renderHist);
 
-function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderHeat();renderHist();renderMetar();renderDigest();}
+/* ── прогноз 48 ч: час за часом ─────────── */
+const parseH=s=>[+s.slice(0,4),+s.slice(5,7),+s.slice(8,10),+s.slice(11,13)];
+const addH=(s,n)=>{const[y,m,d,h]=parseH(s);const dt=new Date(Date.UTC(y,m-1,d,h+n));
+  return dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1)+'-'+pad(dt.getUTCDate())+'T'+pad(dt.getUTCHours())+':00';};
+const mskToday=()=>{const d=new Date();const m2=new Date(d.getTime()+(180+d.getTimezoneOffset())*60000);
+  return m2.getUTCFullYear()+'-'+pad(m2.getUTCMonth()+1)+'-'+pad(m2.getUTCDate());};
+const dayLabel=ds=>{const t=mskToday();if(ds===t)return'сегодня';if(ds===addH(t+'T00:00',24).slice(0,10))return'завтра';
+  return ds.slice(8,10)+'.'+ds.slice(5,7);};
+const WDshort=ds=>{const[y,m,d]=parseH(ds);return WD[new Date(Date.UTC(y,m-1,d)).getUTCDay()];};
+function fcWindows(fc){
+  const F=S.forecast,out=[],thi=fc.thi||[];let i=0;
+  while(i<thi.length){
+    if(thi[i]>72){
+      let j=i;while(j<thi.length&&thi[j]>72)j++;
+      let pk=i;for(let k=i;k<j;k++)if(thi[k]>thi[pk])pk=k;
+      out.push({from:addH(F.h0,i),to:addH(F.h0,j-1),toEnd:addH(F.h0,j),peak:thi[pk],peakAt:addH(F.h0,pk),lvl:thi[pk]>80?4:3,n:j-i});
+      i=j;
+    }else i++;
+  }
+  return out;
+}
+function renderForecast(){
+  const F=S.forecast,sel=$('fcSel');
+  if(!sel)return;
+  if(F){
+    const fs=F.stations||[];
+    if(sel.options.length!==fs.length){
+      const cur=sel.value;
+      let best=null,bv=-1/0;
+      for(const f of fs){const a=f.thi||[];if(!a.length)continue;const mx=Math.max(...a);if(mx>bv){bv=mx;best=f;}}
+      sel.innerHTML=fs.map(s=>'<option value="'+s.id+'">'+s.name+'</option>').join('');
+      if(cur&&fs.some(s=>s.id===cur))sel.value=cur;
+      else if(best)sel.value=best.id;
+    }
+    $('fcRight').textContent='обновлён '+hhmm(F.generatedAt)+' · '+(F.stations||[]).length+' станций';
+  }else{
+    if(sel.options.length)sel.innerHTML='';
+    $('fcRight').textContent='прогноз недоступен';
+  }
+  drawFc(F?(F.stations||[]).find(s=>s.id===sel.value):null);
+}
+function drawFc(fc){
+  const cv=$('fcCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,P={l:38,r:14,t:12,b:22};
+  ctx.clearRect(0,0,W,H);
+  const wl=$('fcWindows'),meta=$('fcMeta'),F=S.forecast;
+  if(!fc||!(fc.thi||[]).length||!F||!F.h0){
+    ctx.fillStyle='#8a8f78';ctx.font='12px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillText(F?'нет данных по станции':'прогноз появится после первого среза (data/forecast.json)',W/2,H/2);
+    if(wl)wl.innerHTML='';
+    if(meta)meta.textContent='';
+    return;
+  }
+  const thi=fc.thi,adj=fc.adj||[],pr=fc.pr||[],n=thi.length;
+  const dx=(W-P.l-P.r)/Math.max(1,n-1);
+  const x=i=>P.l+dx*i;
+  let mn=Math.min(60,...thi),mx=Math.max(72,...thi);
+  if(adj.length)for(const v of adj)if(v!=null&&v>mx)mx=v;
+  mx+=3;mn-=2;
+  const y=v=>P.t+(H-P.t-P.b)*(1-(v-mn)/(mx-mn));
+  /* заливка окон THI>72 / >80 */
+  let i=0;
+  while(i<n){
+    if(thi[i]>72){
+      let j=i;while(j<n&&thi[j]>72)j++;
+      const deep=thi.slice(i,j).some(v=>v>80);
+      ctx.fillStyle=deep?'rgba(224,112,112,.14)':'rgba(232,149,109,.10)';
+      ctx.fillRect(x(i),P.t,dx*(j-i)+1,H-P.t-P.b);
+      i=j;
+    }else i++;
+  }
+  /* сетка Y */
+  ctx.strokeStyle='#262b1d';ctx.fillStyle='#5c614e';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
+  const stepY=Math.max(1,Math.round((mx-mn)/5));
+  for(let v=Math.ceil(mn);v<=mx;v+=stepY){
+    ctx.beginPath();ctx.moveTo(P.l,y(v));ctx.lineTo(W-P.r,y(v));ctx.stroke();
+    ctx.fillText(v,P.l-6,y(v)+3);
+  }
+  /* пороги 72/80 */
+  ctx.setLineDash([4,4]);
+  for(const thr of [72,80]) if(thr>mn&&thr<mx){
+    ctx.strokeStyle=thr===80?'rgba(224,112,112,.55)':'rgba(232,149,109,.5)';
+    ctx.beginPath();ctx.moveTo(P.l,y(thr));ctx.lineTo(W-P.r,y(thr));ctx.stroke();
+    ctx.fillStyle=thr===80?'#e07070':'#e8956d';ctx.textAlign='left';ctx.fillText(String(thr),W-P.r-16,y(thr)-3);
+  }
+  ctx.setLineDash([]);
+  /* разделители суток */
+  for(let k=1;k<n;k++){
+    const hs=addH(F.h0,k);
+    if(hs.slice(11,13)==='00'){
+      ctx.strokeStyle='#3a4030';ctx.setLineDash([2,4]);
+      ctx.beginPath();ctx.moveTo(x(k),P.t);ctx.lineTo(x(k),H-P.b);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#8a8f78';ctx.font='9px ui-monospace,monospace';ctx.textAlign='center';
+      ctx.fillText(dayLabel(hs.slice(0,10))+' '+WDshort(hs.slice(0,10)),x(k)+22,P.t+9);
+    }
+  }
+  /* осадки — столбики */
+  const prMax=Math.max(1,...pr.map(v=>v||0));
+  ctx.fillStyle='rgba(127,191,217,.5)';
+  for(let k=0;k<n;k++){
+    const v=pr[k]||0;if(v<=0)continue;
+    const hpx=Math.min(26,(v/prMax)*26);
+    ctx.fillRect(x(k)-1.5,H-P.b-hpx,3,hpx);
+  }
+  /* THIadj (пунктир) */
+  if(adj.length){
+    ctx.strokeStyle='rgba(240,198,116,.75)';ctx.lineWidth=1.2;ctx.setLineDash([2,3]);
+    ctx.beginPath();let started=false;
+    for(let k=0;k<n;k++){const v=adj[k];if(v==null)continue;if(!started){ctx.moveTo(x(k),y(v));started=true;}else ctx.lineTo(x(k),y(v));}
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  /* THI прогноз */
+  ctx.strokeStyle=HEXZ[zone(thi[n-1])-1];ctx.lineWidth=1.8;ctx.beginPath();
+  for(let k=0;k<n;k++){k?ctx.lineTo(x(k),y(thi[k])):ctx.moveTo(x(k),y(thi[k]));}
+  ctx.stroke();
+  /* пик */
+  let pk=0;for(let k=0;k<n;k++)if(thi[k]>thi[pk])pk=k;
+  ctx.fillStyle=HEXZ[zone(thi[pk])-1];
+  ctx.beginPath();ctx.arc(x(pk),y(thi[pk]),3,0,7);ctx.fill();
+  ctx.fillStyle='#d8dcc8';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillText(fmt(thi[pk]),x(pk),y(thi[pk])-7);
+  /* маркер «сейчас» */
+  ctx.strokeStyle='rgba(216,220,200,.35)';ctx.beginPath();ctx.moveTo(x(0),P.t);ctx.lineTo(x(0),H-P.b);ctx.stroke();
+  ctx.fillStyle='#8a8f78';ctx.textAlign='left';ctx.fillText('сейчас',x(0)+4,P.t+9);
+  /* X-метки */
+  ctx.fillStyle='#5c614e';ctx.textAlign='center';
+  for(let k=0;k<n;k+=6)ctx.fillText(addH(F.h0,k).slice(11,16),x(k),H-7);
+  ctx.lineWidth=1;
+  /* мета + окна стресса */
+  const prSum=pr.reduce((a,b)=>a+(b||0),0);
+  const wmax=fc.wind&&fc.wind.length?Math.max(...fc.wind):0;
+  meta.textContent='пик THI '+fmt(thi[pk])+' · '+addH(F.h0,pk).slice(11,16)+' МСК · осадки Σ '+fmt(prSum)+' мм · ветер до '+fmt(wmax)+' м/с';
+  const wins=fcWindows(fc);
+  wl.innerHTML=wins.length?wins.map(w=>{
+    const cross=w.toEnd.slice(0,10)!==w.from.slice(0,10);
+    return '<div class="fc-win l'+w.lvl+'">'+dayLabel(w.from.slice(0,10))+' '+w.from.slice(11,16)+'–'
+      +(cross?dayLabel(w.toEnd.slice(0,10))+' ':'')+w.toEnd.slice(11,16)
+      +' · THI&gt;'+(w.lvl===4?'80':'72')+' · <span class="fc-peak">пик '+fmt(w.peak)+' в '+w.peakAt.slice(11,16)+'</span> ('+w.n+' ч)</div>';
+  }).join(''):'<span class="small-dim">окон тепловой нагрузки THI&gt;72 в ближайшие 48 ч не прогнозируется</span>';
+}
+$('fcSel').addEventListener('change',renderForecast);
+
+/* ── тайм-машина карты ─────────────────── */
+document.querySelectorAll('#tmBar .tm').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const off=+b.dataset.off;
+    if(off>0&&!S.forecast){$('tmNote').textContent='прогноз недоступен (forecast.json нет)';return;}
+    S.tmOff=off;
+    document.querySelectorAll('#tmBar .tm').forEach(x=>x.classList.toggle('on',x===b));
+    renderMap();
+  });
+});
+
+function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderForecast();renderHeat();renderHist();renderMetar();renderDigest();}
 
 loadAll();
 setInterval(loadAll,5*60*1000);

@@ -7,8 +7,9 @@
  * 2. Open-Meteo: мульти-точечные запросы чанками ≤ 25 станций с ретраями
  *    (49 точек: все 43 района Ростовской обл. + 2 ретрая на чанк).
  * 3. Считаем THI/THImax7/осадки-24ч/BRD-лайт.
- * 4. Пишем data/latest.json + дописываем снапшот дня data/snapshots/YYYY-MM-DD.json,
- *    подрезаем историю старше 30 дней.
+ * 4. Пишем data/latest.json + data/forecast.json (часовой прогноз 48 ч из тех же
+ *    ответов — БЕЗ дополнительных запросов к API) + дописываем снапшот дня
+ *    data/snapshots/YYYY-MM-DD.json, подрезаем историю старше 30 дней.
  *
  * Коммит делает воркфлоу (git-шаги вынесены в YAML), скрипт только пишет файлы.
  */
@@ -135,6 +136,8 @@ const [metar, om] = await Promise.all([fetchMetar(), fetchOpenMeteo().catch((e) 
 
 const stations = [];
 const snapRow = {};
+const fcSt = []; // часовой прогноз 48 ч — из тех же ответов Open-Meteo
+let fcH0 = null; // метка первого часа (МСК, локальный ISO Open-Meteo)
 
 if (Array.isArray(om) && om.length === STATIONS.stations.length) {
   STATIONS.stations.forEach((st, i) => {
@@ -146,7 +149,12 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
     const wdir = cur.wind_direction_10m ?? null;
     // солнечная радиация текущего часа (ночь → 0/отсутствует)
     const hTimes = w.hourly?.time ?? [];
-    const hIdx = cur.time ? hTimes.indexOf(String(cur.time).slice(0, 13) + ':00') : -1;
+    // текущий час в МСК: cur.time или (фолбэк) сгенерированный момент +3 ч
+    const curHour = cur.time
+      ? String(cur.time).slice(0, 13) + ':00'
+      : new Date(now.getTime() + 3 * 3600e3).toISOString().slice(0, 13) + ':00';
+    let hIdx = hTimes.indexOf(curHour);
+    if (hIdx < 0 && hTimes.length) hIdx = hTimes.findIndex((t) => t >= curHour); // ISO сравнивается лексикографически корректно
     const swr = hIdx >= 0 ? (w.hourly?.shortwave_radiation?.[hIdx] ?? 0) : 0;
     const thiAdj = thiMader(t, rh, wind, swr);
     const precip24 = (w.hourly?.precipitation ?? []).slice(0, 24).reduce((a, b) => a + (b ?? 0), 0);
@@ -185,6 +193,29 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
     };
     stations.push(row);
     snapRow[st.id] = [row.t, row.rh, row.wind, row.thi, row.thiAdj];
+
+    /* часовой прогноз 48 ч — из ЭТОГО ЖЕ ответа Open-Meteo (без доп. запросов) */
+    if (hIdx >= 0) {
+      const FH = 48;
+      const rec = { id: st.id, name: st.name, thi: [], adj: [], t: [], rh: [], wind: [], wd: [], pr: [] };
+      for (let k = 0; k < FH && hIdx + k < hTimes.length; k++) {
+        const t2 = w.hourly?.temperature_2m?.[hIdx + k];
+        const rh2 = w.hourly?.relative_humidity_2m?.[hIdx + k];
+        if (t2 == null || rh2 == null) break; // горизонт кончился — обрезаем
+        const wind2 = w.hourly?.wind_speed_10m?.[hIdx + k] ?? 0;
+        rec.t.push(+t2.toFixed(1));
+        rec.rh.push(Math.round(rh2));
+        rec.wind.push(+wind2.toFixed(1));
+        rec.wd.push(w.hourly?.wind_direction_10m?.[hIdx + k] ?? null);
+        rec.pr.push(+(w.hourly?.precipitation?.[hIdx + k] ?? 0).toFixed(1));
+        rec.thi.push(+thi(t2, rh2).toFixed(1));
+        rec.adj.push(+thiMader(t2, rh2, wind2, w.hourly?.shortwave_radiation?.[hIdx + k] ?? 0).toFixed(1));
+      }
+      if (rec.thi.length) {
+        fcSt.push(rec);
+        if (!fcH0) fcH0 = hTimes[hIdx];
+      }
+    }
   });
 } else {
   console.error('Open-Meteo недоступен, срез будет пустым по метео (METAR остаётся)');
@@ -192,6 +223,14 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
 
 const latest = { generatedAt, region: STATIONS.region, stations, metar };
 writeFileSync(join(ROOT, 'data', 'latest.json'), JSON.stringify(latest, null, 1) + '\n');
+
+/* ---------- часовой прогноз 48 ч (компактно, читает дашборд) ---------- */
+if (fcSt.length) {
+  writeFileSync(
+    join(ROOT, 'data', 'forecast.json'),
+    JSON.stringify({ generatedAt, h0: fcH0, hours: fcSt[0].thi.length, stations: fcSt }) + '\n',
+  );
+}
 
 /* ---------- снапшот дня ---------- */
 const snapDir = join(ROOT, 'data', 'snapshots');
@@ -222,5 +261,5 @@ for (const f of readdirSync(snapDir)) {
 }
 
 console.log(
-  `OK: ${stations.length}/${STATIONS.stations.length} станций, METAR ${metar.filter((m) => m.t != null).length}/${STATIONS.metar.length}, снапшот ${dayKey} → ${snap.hours.length} записей`,
+  `OK: ${stations.length}/${STATIONS.stations.length} станций, METAR ${metar.filter((m) => m.t != null).length}/${STATIONS.metar.length}, снапшот ${dayKey} → ${snap.hours.length} записей, прогноз 48ч: ${fcSt.length} станций от ${fcH0 ?? '—'}`,
 );
