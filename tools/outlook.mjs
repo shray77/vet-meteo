@@ -50,6 +50,7 @@ for (let i = 0; i < STATIONS.stations.length; i += CH) {
     daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
     timezone: 'Europe/Moscow',
     forecast_days: '7',
+    windspeed_unit: 'ms',
     latitude: chunk.map((s) => s.lat).join(','),
     longitude: chunk.map((s) => s.lon).join(','),
   });

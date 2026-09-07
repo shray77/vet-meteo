@@ -158,6 +158,27 @@ footer b{color:var(--muted)}
 .tm-note{font-size:10px;color:var(--muted);margin-left:4px}
 .btn.tm{padding:3px 9px}
 .btn.tm.on{background:var(--z1bg);color:var(--z1fg);border-color:#2a4a26}
+
+/* ── проверка прогноза (ретроспектива) ── */
+#fcHelp{padding:5px 12px 7px;font-size:11px;color:var(--muted);line-height:1.55;border-bottom:1px solid var(--border2)}
+#fcHelp b{color:var(--text);font-weight:700}
+.v-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:900px){.v-grid{grid-template-columns:repeat(2,1fr)}}
+.v-cell{background:var(--panel3);border:1px solid var(--border2);border-radius:3px;padding:7px 9px 6px}
+.v-cell .k-l{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
+.v-cell .k-v{font-size:17px;font-weight:700;letter-spacing:.02em}
+.v-cell .k-s{font-size:10px;color:var(--muted);margin-top:2px}
+.v-sec{display:flex;gap:10px;align-items:baseline;font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin:12px 0 6px;flex-wrap:wrap}
+.v-sec b{color:var(--accent);font-size:11px;letter-spacing:.16em}
+.v-sec .right{margin-left:auto;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:.04em}
+.v-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.v-th{width:100%;border-collapse:collapse;font-size:12px}
+.v-th th{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.v-th th:first-child,.v-th td:first-child{text-align:left}
+.v-th td{padding:4px 8px;border-bottom:1px solid var(--border2);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.v-verdict{margin-top:12px;padding:8px 11px;border:1px solid var(--border2);border-radius:3px;background:var(--panel2);font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.v-tag{font-weight:700;padding:1px 8px;border-radius:2px;white-space:nowrap}
+.v-tag.ok{background:var(--z1bg);color:var(--z1fg)} .v-tag.mid{background:var(--z2bg);color:var(--z2fg)} .v-tag.warn{background:var(--z3bg);color:var(--z3fg)} .v-tag.bad{background:var(--z4bg);color:var(--z4fg)}
 </style>
 </head>
 <body>
@@ -256,6 +277,7 @@ footer b{color:var(--muted)}
     <div class="p-h"><b>ПРОГНОЗ · 48 Ч ЧАС ЗА ЧАСОМ</b><span>Open-Meteo hourly · THI / THIadj / осадки</span>
       <select id="fcSel" class="hist-select" title="станция"></select>
       <span class="right" id="fcRight"></span></div>
+    <div id="fcHelp">как читать: <b>выбери станцию</b> в шапке панели — линия THI на 48 ч вперёд, <b>залитые зоны</b> = часы теплового стресса (THI&gt;72/80), столбики внизу — осадки; текст под графиком — итоговые окна стресса. На карте кнопки <b>+3/+6/+12/+24/+48 ч</b> показывают всю область в будущем, попап круга — детали по часу.</div>
     <div class="p-b" style="padding:8px 12px 2px">
       <canvas id="fcCanvas" width="1400" height="200"></canvas>
     </div>
@@ -266,6 +288,16 @@ footer b{color:var(--muted)}
       <span><i style="background:rgba(127,191,217,.5);height:6px"></i>осадки, мм/ч</span>
       <span>заливка — окна THI&gt;72 / &gt;80 · вертикаль — разделитель суток</span>
       <span style="margin-left:auto" id="fcMeta"></span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="p-h"><b>ПРОВЕРКА ПРОГНОЗА · РЕТРОСПЕКТИВА</b><span>что обещали vs что случилось</span><span class="right" id="vRight"></span></div>
+    <div class="p-b" id="vBody"><span class="skl">загрузка…</span></div>
+    <div class="legend">
+      <span>MAE — средняя абс. ошибка · bias — систематический сдвиг</span>
+      <span>POD — доля пойманных событий · FAR — доля ложных тревог</span>
+      <span style="margin-left:auto" id="vLegendRight"></span>
     </div>
   </div>
 
@@ -307,7 +339,7 @@ footer b{color:var(--muted)}
 
   <footer>
     <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — 3×/час ~:07/:27/:47 МСК, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
-    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
+    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
   </footer>
 
 </div>
@@ -316,7 +348,7 @@ footer b{color:var(--muted)}
 'use strict';
 /* ?raw=… — точка данных для локальных тестов, напр. ?raw=http://localhost:8000/data */
 const RAW=new URLSearchParams(location.search).get('raw')||'https://raw.githubusercontent.com/shray77/vet-meteo/main/data';
-const S={latest:null,outlook:null,geo:null,snaps:[],forecast:null,tmOff:0,sort:{k:'thi',dir:-1}};
+const S={latest:null,outlook:null,geo:null,snaps:[],forecast:null,verify:null,tmOff:0,sort:{k:'thi',dir:-1}};
 
 /* ── utils ─────────────────────────────── */
 const $=id=>document.getElementById(id);
@@ -338,13 +370,14 @@ async function loadAll(){
   const btn=$('refreshBtn'); if(btn)btn.disabled=true;
   $('errBanner').style.display='none';
   const errs=[];
-  const [latest,outlook,geo,forecast]=await Promise.all([
+  const [latest,outlook,geo,forecast,verify]=await Promise.all([
     jget(RAW+'/latest.json').catch(()=>{errs.push('latest.json');return null;}),
     jget(RAW+'/outlook.json').catch(()=>{errs.push('outlook.json');return null;}),
     jget(RAW+'/stations.json').catch(()=>{errs.push('stations.json');return null;}),
-    jget(RAW+'/forecast.json').catch(()=>null)
+    jget(RAW+'/forecast.json').catch(()=>null),
+    jget(RAW+'/verify.json').catch(()=>null)
   ]);
-  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast;
+  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast; S.verify=verify||S.verify;
   const days=[]; const now=new Date();
   for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5)));
   const snaps=await Promise.all(days.map(dd=>jget(RAW+'/snapshots/'+dd+'.json').catch(()=>null)));
@@ -906,7 +939,65 @@ document.querySelectorAll('#tmBar .tm').forEach(b=>{
   });
 });
 
-function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderForecast();renderHeat();renderHist();renderMetar();renderDigest();}
+/* ── проверка прогноза: ретроспектива ── */
+const vNum=v=>v==null?'—':v.toLocaleString('ru-RU');
+const vCell=(l,v,s)=>'<div class="v-cell"><div class="k-l">'+l+'</div><div class="k-v">'+v+'</div><div class="k-s">'+s+'</div></div>';
+const vRow=(name,w)=>'<tr><td class="st-name">'+name+'</td><td>'+vNum(w&&w.obs)+'</td><td>'
+  +((w&&w.pod!=null)?fmt(w.pod)+' %':'—')+'</td><td>'+((w&&w.far!=null)?fmt(w.far)+' %':'—')+'</td></tr>';
+function renderVerify(){
+  const V=S.verify,el=$('vBody'),rg=$('vRight'),lr=$('vLegendRight');
+  if(!el)return;
+  if(!V){el.innerHTML='<span class="small-dim">verify.json пока нет — панель оживёт после первого расчёта в CI</span>';if(rg)rg.textContent='—';return;}
+  if(rg)rg.textContent='расчёт '+ago(V.generatedAt);
+  const M=V.model,R=V.radar;
+  let h='';
+  if(M&&M.hours){
+    const b=M.bias||{};
+    h+='<div class="v-sec"><b>СЛОЙ А · МОДЕЛЬ VS ФАКТ</b><span>бэктест 30 дней · «правда» — ERA5-реанализ</span>'
+      +'<span class="right">'+M.from+' → '+M.to+' · '+M.stations+' станций × '+vNum(M.hours)+' ч</span></div>';
+    h+='<div class="v-grid">'
+      +vCell('MAE THI',fmt(M.mae.thi),'стресс-индекс, пункты')
+      +vCell('MAE T',fmt(M.mae.t)+' °C','сдвиг '+(b.t==null?'—':(b.t>0?'+':'')+fmt(b.t)))
+      +vCell('MAE RH',fmt(M.mae.rh)+' %','сдвиг '+(b.rh==null?'—':(b.rh>0?'+':'')+fmt(b.rh)))
+      +vCell('MAE ветер',fmt(M.mae.wind)+' м/с','сдвиг '+(b.wind==null?'—':(b.wind>0?'+':'')+fmt(b.wind)))
+      +'</div>';
+    h+='<table class="v-th"><thead><tr><th>событие</th><th>часов факта</th><th>поймано (POD)</th><th>ложных (FAR)</th></tr></thead><tbody>'
+      +vRow('THI&gt;72 · тепловой стресс',M.win72)
+      +vRow('THI&gt;68 · лёгкий стресс',M.win68)
+      +vRow('осадки ≥ 0,5 мм/ч',M.prEvents)
+      +'</tbody></table>';
+    if(M.worst&&M.worst.length)h+='<div class="v-note">хуже всех по THI: '+M.worst.map(w=>w.name+' '+fmt(w.maeThi)).join(' · ')+'</div>';
+  }else{
+    h+='<div class="v-note">слой А: бэктест модели не посчитан (API недоступны) — появится со следующего запуска CI</div>';
+  }
+  if(R){
+    h+='<div class="v-sec"><b>СЛОЙ Б · НАШ ПРОГНОЗ VS СРЕЗЫ</b><span>git-история выпусков 48 ч · факт — срезы станций 3×/час</span>'
+      +'<span class="right">'+(R.span?R.span[0].slice(5,16).replace('T',' ')+' → '+R.span[1].slice(5,16).replace('T',' ')+' МСК':'накапливается')+' · выпусков '+vNum(R.issues)+'</span></div>';
+    if(R.hours){
+      h+='<table class="v-th"><thead><tr><th>горизонт</th><th>проверено</th><th>MAE THI</th><th>MAE T °C</th><th>MAE RH %</th><th>MAE ветер</th></tr></thead><tbody>';
+      for(const b of R.horizons||[])h+='<tr><td class="st-name">'+b.h+'</td>'
+        +'<td>'+(b.n?vNum(b.n)+' ч':'<span class="small-dim">копится</span>')+'</td>'
+        +'<td>'+(b.n?fmt(b.maeThi):'—')+'</td><td>'+(b.n?fmt(b.maeT):'—')+'</td>'
+        +'<td>'+(b.n?fmt(b.maeRh,0):'—')+'</td><td>'+(b.n?fmt(b.maeWind):'—')+'</td></tr>';
+      h+='</tbody></table>';
+      if(R.win72&&R.win72.obs)h+='<div class="v-note">окна THI&gt;72 по нашему прогнозу: поймано '+fmt(R.win72.pod)+' % · ложных '+fmt(R.win72.far)+' %</div>';
+    }else{
+      h+='<div class="v-note">проверимых часов пока нет: первый выпуск уехал 07.09 21:36 МСК. Горизонт +3 ч проверится ночью, +12 к обеду, +48 — через двое суток; панель заполнится сама, без рук.</div>';
+    }
+  }
+  const cls={'малые':'ok','умеренные':'mid','заметные':'warn','большие':'bad'}[V.verdict]||'';
+  const txt={'малые':'прогнозу можно доверять: окна стресса модель держит уверенно',
+    'умеренные':'рабочая точность: окна стресса видно, пики чуть плавает',
+    'заметные':'читать с поправкой: сверяй окна со свежими срезами',
+    'большие':'прогнозу верить нельзя — смотреть только фактические срезы'}[V.verdict];
+  h+='<div class="v-verdict">'+(V.verdict&&V.verdict!=='—'
+    ?'<span class="v-tag '+cls+'">расхождения '+V.verdict+'</span><span>MAE THI ≤ '+fmt(V.thi)+' · '+txt+'</span>'
+    :'<span>вердикт: проверенных данных мало — накопятся за пару суток</span>')+'</div>';
+  el.innerHTML=h;
+  if(lr)lr.textContent='слой Б пополняется сам: 3 выпуска/час × 49 станций';
+}
+
+function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderForecast();renderVerify();renderHeat();renderHist();renderMetar();renderDigest();}
 
 loadAll();
 setInterval(loadAll,5*60*1000);

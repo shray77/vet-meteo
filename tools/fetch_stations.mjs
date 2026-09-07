@@ -10,6 +10,7 @@
  * 4. Пишем data/latest.json + data/forecast.json (часовой прогноз 48 ч из тех же
  *    ответов — БЕЗ дополнительных запросов к API) + дописываем снапшот дня
  *    data/snapshots/YYYY-MM-DD.json, подрезаем историю старше 30 дней.
+ * 5. Ветер — строго м/с (windspeed_unit=ms; до 07.09.2026 был км/ч — юнит-баг).
  *
  * Коммит делает воркфлоу (git-шаги вынесены в YAML), скрипт только пишет файлы.
  */
@@ -93,6 +94,9 @@ const OM_FIELDS = {
   daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
   timezone: 'Europe/Moscow',
   forecast_days: '7',
+  // КРИТИЧНО: без этого Open-Meteo отдаёт ветер в км/ч, а радар и формулы
+  // (THIadj Мадера, BRD-порог 2,5 м/с штиля) ждут м/с — ветер был завышен ×3,6.
+  windspeed_unit: 'ms',
 };
 
 async function fetchOpenMeteo() {
