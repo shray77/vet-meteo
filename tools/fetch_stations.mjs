@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * tools/fetch_stations.mjs — опрос станций для GitHub Actions (hourly).
+ * tools/fetch_stations.mjs — опрос станций для GitHub Actions.
  * Без зависимостей: Node 20 (глобальный fetch).
  *
- * 1. METAR (NOAA aviationweather, JSON) по 6 аэропортам-ориентирам.
- * 2. Open-Meteo: единый мульти-точечный запрос по 16 станциям
- *    (current + hourly + daily 7 дней).
+ * 1. METAR (NOAA aviationweather, JSON) по аэропортам-ориентирам.
+ * 2. Open-Meteo: мульти-точечные запросы чанками ≤ 25 станций с ретраями
+ *    (49 точек: все 43 района Ростовской обл. + 2 ретрая на чанк).
  * 3. Считаем THI/THImax7/осадки-24ч/BRD-лайт.
  * 4. Пишем data/latest.json + дописываем снапшот дня data/snapshots/YYYY-MM-DD.json,
  *    подрезаем историю старше 30 дней.
@@ -45,6 +45,19 @@ async function fetchJson(url, ms = 25000) {
   }
 }
 
+async function fetchJsonRetry(url, ms = 30000, tries = 3) {
+  let err;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      return await fetchJson(url, ms);
+    } catch (e) {
+      err = e;
+      if (i < tries) await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+  throw err;
+}
+
 /* ---------- 1. METAR ---------- */
 async function fetchMetar() {
   const ids = STATIONS.metar.map((m) => m.icao).join(',');
@@ -72,20 +85,33 @@ async function fetchMetar() {
   }
 }
 
-/* ---------- 2. Open-Meteo (мульти-точечный) ---------- */
+/* ---------- 2. Open-Meteo (чанками по 25, с ретраями) ---------- */
+const OM_FIELDS = {
+  current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation',
+  hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,shortwave_radiation',
+  daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
+  timezone: 'Europe/Moscow',
+  forecast_days: '7',
+};
+
 async function fetchOpenMeteo() {
-  const lats = STATIONS.stations.map((s) => s.lat).join(',');
-  const lons = STATIONS.stations.map((s) => s.lon).join(',');
-  const params = new URLSearchParams({
-    latitude: lats,
-    longitude: lons,
-    current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation',
-    hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,shortwave_radiation',
-    daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
-    timezone: 'Europe/Moscow',
-    forecast_days: '7',
-  });
-  return fetchJson(`https://api.open-meteo.com/v1/forecast?${params}`, 30000);
+  const all = [];
+  const CH = 25;
+  for (let i = 0; i < STATIONS.stations.length; i += CH) {
+    const chunk = STATIONS.stations.slice(i, i + CH);
+    const params = new URLSearchParams({
+      ...OM_FIELDS,
+      latitude: chunk.map((s) => s.lat).join(','),
+      longitude: chunk.map((s) => s.lon).join(','),
+    });
+    const part = await fetchJsonRetry(
+      `https://api.open-meteo.com/v1/forecast?${params}`,
+      45000,
+      3,
+    );
+    all.push(...(Array.isArray(part) ? part : [part]));
+  }
+  return all;
 }
 
 /* ---------- BRD-лайт (скрининг) ---------- */
@@ -196,5 +222,5 @@ for (const f of readdirSync(snapDir)) {
 }
 
 console.log(
-  `OK: ${stations.length} станций, METAR ${metar.filter((m) => m.t != null).length}/6, снапшот ${dayKey} → ${snap.hours.length} записей`,
+  `OK: ${stations.length}/${STATIONS.stations.length} станций, METAR ${metar.filter((m) => m.t != null).length}/${STATIONS.metar.length}, снапшот ${dayKey} → ${snap.hours.length} записей`,
 );

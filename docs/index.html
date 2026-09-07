@@ -358,8 +358,12 @@ function renderHeader(){
   $('archiveBadge').textContent='архив: '+hrs+' ч · '+S.snaps.length+' дн';
   $('archiveBadge').className='badge'+(hrs>1?' ok':'');
   $('metarBadge').textContent='METAR: '+((L.metar||[]).length||'—');
-  const nh=(new Date().getUTCHours()+1)%24;
-  $('nextBadge').textContent='след. срез ~'+pad((nh+3)%24)+':07 МСК';
+  /* расписание срезов: кроны :07/:27/:47 (GitHub может пропускать) */
+  const MSKMIN=[7,27,47], nowM=new Date();
+  let nm=MSKMIN.find(m=>m>nowM.getUTCMinutes());
+  let nh=nowM.getUTCHours();
+  if(nm==null){nm=7;nh=(nh+1)%24;}
+  $('nextBadge').textContent='след. срез ~'+pad((nh+3)%24)+':'+pad(nm)+' МСК';
   $('updated').textContent='срез '+hhmm(L.generatedAt)+' · обновлено '+ago(L.generatedAt);
 }
 function updateAges(){if(S.latest)$('updated').textContent='срез '+hhmm(S.latest.generatedAt)+' · обновлено '+ago(S.latest.generatedAt);}

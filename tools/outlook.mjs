@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * tools/outlook.mjs — суточный дайджест (03:00 UTC): читает fresh-прогноз
- * Open-Meteo по всем станциям + вчерашние снапшоты → data/outlook.json.
+ * Open-Meteo по всем станциям (чанками ≤ 25, с ретраями) + вчерашние
+ * снапшоты → data/outlook.json.
  * Итог: 7-дневные THImax, дни превышения 72/80, топ-риски, осадки.
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
@@ -27,17 +28,37 @@ async function fetchJson(url, ms = 30000) {
   }
 }
 
-const lats = STATIONS.stations.map((s) => s.lat).join(',');
-const lons = STATIONS.stations.map((s) => s.lon).join(',');
-const params = new URLSearchParams({
-  latitude: lats,
-  longitude: lons,
-  daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
-  timezone: 'Europe/Moscow',
-  forecast_days: '7',
-});
+async function fetchJsonRetry(url, ms = 45000, tries = 3) {
+  let err;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      return await fetchJson(url, ms);
+    } catch (e) {
+      err = e;
+      if (i < tries) await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+  throw err;
+}
 
-const om = await fetchJson(`https://api.open-meteo.com/v1/forecast?${params}`).catch(() => null);
+/* чанки по 25 станций — лимиты Open-Meteo на мульти-точечные запросы */
+const om = [];
+const CH = 25;
+for (let i = 0; i < STATIONS.stations.length; i += CH) {
+  const chunk = STATIONS.stations.slice(i, i + CH);
+  const params = new URLSearchParams({
+    daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
+    timezone: 'Europe/Moscow',
+    forecast_days: '7',
+    latitude: chunk.map((s) => s.lat).join(','),
+    longitude: chunk.map((s) => s.lon).join(','),
+  });
+  const part = await fetchJsonRetry(
+    `https://api.open-meteo.com/v1/forecast?${params}`,
+  ).catch(() => null);
+  if (part == null) continue;
+  om.push(...(Array.isArray(part) ? part : [part]));
+}
 
 const stations = [];
 if (Array.isArray(om) && om.length === STATIONS.stations.length) {
