@@ -206,7 +206,7 @@ footer b{color:var(--muted)}
       <span class="badge" id="statusBadge">загрузка…</span>
       <span class="badge" id="archiveBadge">архив: …</span>
       <span class="badge" id="metarBadge">METAR: …</span>
-      <span class="badge" id="nextBadge">след. срез ~:07</span>
+      <span class="badge" id="nextBadge">след. срез ~20 мин</span>
       <span class="badge" id="fcBadge">прогноз 48ч: …</span>
     </div>
     <div class="h-right">
@@ -338,7 +338,7 @@ footer b{color:var(--muted)}
   </div>
 
   <footer>
-    <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — 3×/час ~:07/:27/:47 МСК, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
+    <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — каждые ~20 мин, метроном-цепочка воркфлоу + кроны 7/27/47 как резерв, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
     <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a>
   </footer>
 
@@ -436,12 +436,16 @@ function renderHeader(){
   $('archiveBadge').textContent='архив: '+hrs+' ч · '+S.snaps.length+' дн';
   $('archiveBadge').className='badge'+(hrs>1?' ok':'');
   $('metarBadge').textContent='METAR: '+((L.metar||[]).length||'—');
-  /* расписание срезов: кроны :07/:27/:47 (GitHub может пропускать) */
-  const MSKMIN=[7,27,47], nowM=new Date();
-  let nm=MSKMIN.find(m=>m>nowM.getUTCMinutes());
-  let nh=nowM.getUTCHours();
-  if(nm==null){nm=7;nh=(nh+1)%24;}
-  $('nextBadge').textContent='след. срез ~'+pad((nh+3)%24)+':'+pad(nm)+' МСК';
+  /* метроном CI: срез каждые ~19 мин после выпуска (кроны 7/27/47 — резерв) */
+  const la=L.generatedAt?new Date(L.generatedAt).getTime():0;
+  if(la){
+    const nxt=new Date(la+19*60e3);
+    $('nextBadge').textContent = nxt<=new Date()
+      ? 'след. срез: с минуты на минуту'
+      : 'след. срез ~'+pad((nxt.getUTCHours()+3)%24)+':'+pad(nxt.getUTCMinutes())+' МСК';
+  }else{
+    $('nextBadge').textContent='след. срез ~19 мин';
+  }
   const Fc=S.forecast,fb=$('fcBadge');
   if(Fc){
     const fm=agoMin(Fc.generatedAt);

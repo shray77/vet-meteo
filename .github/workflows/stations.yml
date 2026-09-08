@@ -8,10 +8,15 @@ name: stations
 # Время в сводках и коммитах — МСК (Europe/Moscow, UTC+3).
 on:
   schedule:
-    # GitHub сам пропускает часовые кроны (наблюдали дыры 2.5–6 ч), поэтому
-    # просим трижды в час: даже с пропусками остаётся ~1–2 живых среза в час.
+    # Кроны — «best effort»: за 07–08.09 GitHub создал лишь 5–6 запусков из 72/сутки
+    # (дыры 2–6 ч). Основную частоту держит метроном pacer.yml (цепочка workflow_run:
+    # stations → pacer(пауза 18 мин) → stations → …), кроны — бесплатная подстраховка.
     # Минуты 7/27/47 — вне пиков :00/:30.
     - cron: '7,27,47 * * * *'
+  workflow_run:
+    # тик метронома: pacer завершился → сразу опрашиваем станции
+    workflows: [pacer]
+    types: [completed]
   workflow_dispatch: {}
 
 permissions:
@@ -36,21 +41,39 @@ jobs:
         with:
           node-version: 22
 
+      - name: Нужен ли срез? (не чаще раза в 15 мин)
+        # метроном + кроны могут сработать рядом — не дёргаем API и не плодим
+        # одинаковые срезы. Ручной запуск (workflow_dispatch) всегда проходит.
+        id: need
+        run: |
+          AGE=$(node -p "const fs=require('fs');try{const l=JSON.parse(fs.readFileSync('data/latest.json'));console.log(Math.round((Date.now()-Date.parse(l.generatedAt))/1000))}catch{console.log(999999)}")
+          echo "возраст последнего среза: $((AGE/60)) мин"
+          if [ "$AGE" -lt 900 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "срез свежий (<15 мин) — тяжёлые шаги пропускаем"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Опрос станций (METAR + Open-Meteo + THIadj)
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         run: node tools/fetch_stations.mjs
 
       - name: Ретро-проверка прогноза (verify.json)
         # слой А — бэктест модели 30 дней vs ERA5 (пересчёт раз в 12 ч, иначе кэш);
         # слой Б — наши выпуски 48 ч по git-истории против фактических срезов.
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         run: node tools/verify.mjs
 
       - name: Telegram-алерты (THI≥80 / THIadj≥80 / BRD≥75)
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: node tools/alerts.mjs
 
       - name: Сводка (МСК)
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           echo '### Срез станций · время МСК' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -58,6 +81,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Коммит среза
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           git config user.name "vet-meteo-bot"
           git config user.email "actions@github.com"

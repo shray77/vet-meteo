@@ -1,0 +1,33 @@
+name: pacer
+
+# Метроном для stations. Проблема: GitHub теряет scheduled-события — за 07–08.09
+# создано всего 5–6 запусков из 72/сутки (дыры 2–6 ч), при этом все созданные —
+# успешные и без очередей. Запланированные кроны — «best effort», гарантий нет.
+# Решение: замкнуть частоту на события workflow_run — они порождаются завершением
+# прогона, а не планировщиком, и создаются надёжно:
+#   stations завершился → pacer спит PAUSE_MIN → stations снова → …
+# Итог: ~3 среза/час независимо от пропусков кронов. Кроны 7/27/47 остаются
+# бесплатной подстраховкой; дублей нет — stations сам пропускает слишком свежие срезы.
+# Репо публичный → минуты Actions бесплатны и безлимитны.
+# Выключить метроном: удалить этот файл ИЛИ убрать блок workflow_run из stations.yml.
+on:
+  workflow_run:
+    workflows: [stations]
+    types: [completed]
+  workflow_dispatch: {}
+
+concurrency:
+  group: pacer
+  cancel-in-progress: true
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Пауза между срезами
+        run: |
+          echo "тик: $(TZ='Europe/Moscow' date '+%d.%m %H:%M') МСК — пауза $PAUSE_MIN мин, потом снова stations"
+          sleep $((PAUSE_MIN*60))
+        env:
+          PAUSE_MIN: 18
