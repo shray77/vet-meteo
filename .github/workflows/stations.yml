@@ -55,8 +55,19 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Опрос станций (METAR + Open-Meteo + THIadj)
+      - name: Срез через CF vet-api (опционально, фолбэк — fetch_stations.mjs)
+        # Вычисления уезжают на Cloudflare Worker vet-api (см. репо shray77/vet-api):
+        # Actions-раннер достаёт workers.dev, РФ-посетители — нет, поэтому фолбэк обязателен.
+        id: cf
         if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
+        continue-on-error: true
+        env:
+          VET_API_URL: ${{ vars.VET_API_URL }}
+        run: node tools/cf-slice.mjs
+
+      - name: Опрос станций (METAR + Open-Meteo + THIadj)
+        # Локальный расчёт — фолбэк, если CF-срез не прошёл (outcome≠success).
+        if: ${{ steps.cf.outcome != 'success' && (steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch') }}
         run: node tools/fetch_stations.mjs
 
       - name: Ретро-проверка прогноза (verify.json)
