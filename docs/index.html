@@ -6,7 +6,7 @@
 <title>ВЕТРАДАР-61 · Пост диспетчера</title>
 <meta name="description" content="Диспетчерский дашборд: метеостанции Ростовской области, THI КРС, BRD телят, прогноз 7 дней. Данные обновляет GitHub Actions ежечасно.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0d08' stroke='%23f0c674' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%237fbf6f'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23f0c674'/%3E%3Cline x1='16' y1='16' x2='27' y2='7' stroke='%23f0c674' stroke-width='1.5'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet.css">
 <style>
 :root{
   --bg:#0b0d08; --panel:#10130a; --panel2:#151910; --panel3:#1a1f12;
@@ -144,6 +144,8 @@ footer b{color:var(--muted)}
 #milkPanel summary{cursor:pointer;list-style:none}
 #milkPanel summary::-webkit-details-marker{display:none}
 #milkPanel summary:hover .p-h{background:var(--panel3)}
+#milkPanel.stress{border-color:var(--z3fg)}
+#milkPeek{color:var(--orange);font-weight:700;white-space:nowrap;font-size:11px;letter-spacing:.02em}
 .milk-in{background:var(--panel2);border:1px solid var(--border);border-radius:3px;color:var(--text);font:inherit;padding:4px 8px;width:90px;text-align:center}
 .milk-in:focus{outline:1px solid var(--accent);border-color:var(--accent)}
 
@@ -236,7 +238,7 @@ footer b{color:var(--muted)}
   </div>
 
   <details class="panel" id="milkPanel">
-    <summary><div class="p-h"><b>ЭКОНОМИКА ТЕПЛОВОГО СТРЕССА</b><span>головы × THI → литры и рубли · Ravagnolo &amp; Misztal 2000</span><span class="right" id="milkHint">развернуть ▾</span></div></summary>
+    <summary><div class="p-h"><b>ЭКОНОМИКА ТЕПЛОВОГО СТРЕССА</b><span>головы × THI → литры и рубли · Ravagnolo &amp; Misztal 2000</span><span class="right" id="milkPeek"></span><span class="right" id="milkHint">развернуть ▾</span></div></summary>
     <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
       <label>голов дойных: <input class="milk-in" id="milkHeads" type="number" min="0" step="1" value="200"></label>
       <label>цена молока, ₽/л: <input class="milk-in" id="milkPrice" type="number" min="0" step="0.5" value="40"></label>
@@ -359,7 +361,8 @@ footer b{color:var(--muted)}
   </footer>
 
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="console.warn('Leaflet CDN недоступен — включаю схему-фолбэк')"></script>
+<script src="vendor/leaflet.js"></script>
+<script>if(typeof L==='undefined')document.write('<script src="https:\/\/unpkg.com\/leaflet@1.9.4\/dist\/leaflet.js" onerror="console.warn(\'Leaflet CDN недоступен — включаю схему-фолбэк\')"><\/script>');</script>
 <script>
 'use strict';
 /* ?raw=… — точка данных для локальных тестов, напр. ?raw=http://localhost:8000/data */
@@ -502,23 +505,26 @@ function renderKPIs(){
 function renderMilk(){
   const L=S.latest,O=S.outlook;
   const heads=Math.max(0,+$('milkHeads').value||0), price=Math.max(0,+$('milkPrice').value||0);
-  const out=$('milkOut');
+  const rub=v=>Math.round(v).toLocaleString('ru-RU'), lit=v=>Math.round(v).toLocaleString('ru-RU');
+  const out=$('milkOut'), panel=$('milkPanel'), peek=$('milkPeek');
+  /* свёрнутый заголовок: живая цифра потерь + подсветка при стрессе (во ВСЕХ ветках выхода) */
+  const setPeek=day=>{if(panel&&peek){panel.classList.toggle('stress',day>0);peek.textContent=(heads&&price&&day>0)?('−'+lit(day)+' л/сут · −'+rub(day*price)+' ₽/сут'):'';}};
   if(!out)return;
-  if(!L){out.textContent='данные загружаются…';return;}
-  if(!heads||!price){out.textContent='укажи поголовье и цену молока — посчитаю потери';return;}
+  if(!L){out.textContent='данные загружаются…';setPeek(0);return;}
+  if(!heads||!price){out.textContent='укажи поголовье и цену молока — посчитаю потери';setPeek(0);return;}
   const st=L.stations||[];
-  if(!st.length){out.textContent='—';return;}
+  if(!st.length){out.textContent='—';setPeek(0);return;}
   const mx=st.reduce((a,b)=>b.thi>a.thi?b:a);
   const perCow=Math.max(0,(mx.thi-72)*0.2); /* Ravagnolo & Misztal 2000, как в полной версии */
   const day=perCow*heads;
   let days72=0;
   if(O&&(O.stations||[]).length)days72=(O.stations||[]).reduce((a,b)=>b.days72>a.days72?b:a).days72||0;
-  const rub=v=>Math.round(v).toLocaleString('ru-RU'), lit=v=>Math.round(v).toLocaleString('ru-RU');
   out.innerHTML = day>0
     ? ('сейчас: <b style="color:var(--accent)">'+mx.name+'</b> · THI '+fmt(mx.thi)+' → потери ~<b>'+lit(day)+' л/сут</b> ≈ <b>'+rub(day*price)+' ₽/сут</b>'
        +(days72?(' · по прогнозу '+days72+' стресс. дн.: ~<b>'+lit(day*days72)+' л</b> ≈ <b>'+rub(day*days72*price)+' ₽</b>'):'')
        +'<br><span style="color:var(--dim)">0.2 кг/гол за ед. THI&gt;72, худшая станция области; вентиляция/душение снижают потери — это оценка сверху.</span>')
     : ('сейчас теплового стресса нет (THI макс '+fmt(mx.thi)+' &lt; 72)'+(days72?(' · в прогнозе '+days72+' дн. с THI&gt;72 — включится автоматически'):''));
+  setPeek(day);
 }
 ['milkHeads','milkPrice'].forEach(id=>{const el=$(id);el&&el.addEventListener('input',renderMilk);});
 (function(){const mp=$('milkPanel');mp&&mp.addEventListener('toggle',()=>{$('milkHint').textContent=mp.open?'свернуть ▴':'развернуть ▾';if(mp.open)renderMilk();});})();
