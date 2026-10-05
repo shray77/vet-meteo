@@ -1,175 +1,175 @@
 {
- "generatedAt": "2026-10-04T09:50:06.215Z",
+ "generatedAt": "2026-10-05T10:28:49.372Z",
  "horizon": "7 дней",
  "stations": [
   {
    "id": "rostov",
    "name": "Ростов-на-Дону",
-   "thiMax7": 71.7,
+   "thiMax7": 71.6,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.6,
    "perDay": [
-    59.8,
-    64.2,
-    66,
+    64.7,
     66.2,
-    67.7,
-    70.9,
-    71.7
+    67.3,
+    69,
+    71.3,
+    71.5,
+    71.6
    ]
   },
   {
    "id": "taganrog",
    "name": "Таганрог",
-   "thiMax7": 69.4,
+   "thiMax7": 68,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.9,
    "perDay": [
-    59.3,
-    62.1,
-    63.1,
-    63,
-    64.3,
-    67.3,
-    69.4
+    62.5,
+    63.6,
+    64.5,
+    66.3,
+    66.9,
+    66.3,
+    68
    ]
   },
   {
    "id": "shakhty",
    "name": "Шахты",
-   "thiMax7": 70.5,
+   "thiMax7": 71.1,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.8,
    "perDay": [
-    59,
-    64.2,
-    65.9,
-    66.3,
-    67.5,
-    69.3,
-    70.5
+    65,
+    66.1,
+    67.8,
+    68.7,
+    70.6,
+    71,
+    71.1
    ]
   },
   {
    "id": "volgodonsk",
    "name": "Волгодонск",
-   "thiMax7": 70.9,
-   "days72": 0,
+   "thiMax7": 72.9,
+   "days72": 2,
    "days80": 0,
    "precip7": 0,
    "perDay": [
-    58.5,
-    63.5,
-    64.9,
-    67.6,
-    68.9,
-    70.9,
-    70.7
+    64.5,
+    66.2,
+    67.8,
+    69,
+    71.1,
+    72.2,
+    72.9
    ]
   },
   {
    "id": "novocherkassk",
    "name": "Новочеркасск",
-   "thiMax7": 71.3,
-   "days72": 0,
+   "thiMax7": 72.5,
+   "days72": 2,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.9,
    "perDay": [
-    60.3,
-    64.7,
+    65,
     66.5,
-    67.2,
-    69,
-    71,
-    71.3
+    68.5,
+    69.4,
+    71.9,
+    72.1,
+    72.5
    ]
   },
   {
    "id": "bataysk",
    "name": "Батайск",
-   "thiMax7": 72.6,
-   "days72": 2,
+   "thiMax7": 72.8,
+   "days72": 3,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.6,
    "perDay": [
-    60.3,
-    64.9,
-    66.9,
-    67.8,
-    69.3,
-    72.3,
-    72.6
+    65.4,
+    67.2,
+    68.3,
+    70.1,
+    72.6,
+    72.8,
+    72.7
    ]
   },
   {
    "id": "azov",
    "name": "Азов",
-   "thiMax7": 71.4,
+   "thiMax7": 71.9,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.9,
    "perDay": [
-    59.6,
-    64,
-    64.8,
-    65.3,
-    68,
-    70.9,
-    71.4
+    64.2,
+    65.5,
+    66.6,
+    69.7,
+    71.9,
+    68.2,
+    69.5
    ]
   },
   {
    "id": "salsk",
    "name": "Сальск",
-   "thiMax7": 71.6,
-   "days72": 0,
+   "thiMax7": 73.3,
+   "days72": 1,
    "days80": 0,
    "precip7": 0,
    "perDay": [
-    59.3,
-    63.8,
-    65.8,
-    68.5,
-    70.2,
-    70,
-    71.6
+    64.8,
+    66,
+    68.6,
+    70.3,
+    70.8,
+    72,
+    73.3
    ]
   },
   {
    "id": "millerovo",
    "name": "Миллерово",
-   "thiMax7": 70.3,
+   "thiMax7": 69.7,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.8,
    "perDay": [
-    57.5,
-    61.7,
-    63.2,
-    65.8,
-    64.6,
-    68.9,
-    70.3
+    62.4,
+    63.3,
+    66.3,
+    65.7,
+    69,
+    69.7,
+    66.5
    ]
   },
   {
    "id": "morozovsk",
    "name": "Морозовск",
-   "thiMax7": 70.6,
+   "thiMax7": 71.1,
    "days72": 0,
    "days80": 0,
    "precip7": 0,
    "perDay": [
-    57.7,
-    62.3,
-    65.1,
-    67,
-    67.4,
-    70.1,
-    70.6
+    63.6,
+    65.4,
+    67.5,
+    69.3,
+    71.1,
+    71,
+    70.1
    ]
   },
   {
@@ -178,913 +178,917 @@
    "thiMax7": 71,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.5,
    "perDay": [
-    58.6,
-    63.3,
-    65.7,
-    67.7,
-    67.2,
-    70,
-    71
+    64.3,
+    66,
+    68.6,
+    69.4,
+    70.9,
+    71,
+    70.7
    ]
   },
   {
    "id": "zernograd",
    "name": "Зерноград",
-   "thiMax7": 71.2,
-   "days72": 0,
+   "thiMax7": 72.3,
+   "days72": 1,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.9,
    "perDay": [
-    59.6,
-    64.4,
-    66.3,
-    67.7,
+    64.8,
+    66.1,
+    68.3,
     69.6,
-    71,
-    71.2
+    71.6,
+    71.9,
+    72.3
    ]
   },
   {
    "id": "semikarakorsk",
    "name": "Семикаракорск",
-   "thiMax7": 71.3,
-   "days72": 0,
+   "thiMax7": 72.4,
+   "days72": 2,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.3,
    "perDay": [
-    59.8,
-    65,
-    66.9,
-    67.6,
-    68.9,
-    70.7,
-    71.3
+    65.8,
+    66.4,
+    68.7,
+    69.8,
+    71.1,
+    72.4,
+    72.1
    ]
   },
   {
    "id": "konstantinovsk",
    "name": "Константиновск",
-   "thiMax7": 70.3,
+   "thiMax7": 71.2,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.9,
    "perDay": [
-    58.8,
-    63.7,
-    65.6,
-    66.3,
-    67.4,
-    69.7,
-    70.3
+    64.8,
+    66.1,
+    67.8,
+    68.7,
+    70.3,
+    71.2,
+    71.1
    ]
   },
   {
    "id": "vyoshenskaya",
    "name": "Вёшенская",
-   "thiMax7": 71.1,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    56.6,
-    60.7,
-    63.5,
-    66.3,
-    67.1,
-    69.7,
-    71.1
-   ]
-  },
-  {
-   "id": "ust_donetsk",
-   "name": "Усть-Донецкий",
-   "thiMax7": 69.7,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.1,
-    63.1,
-    65.1,
-    66,
-    66.6,
-    68.5,
-    69.7
-   ]
-  },
-  {
-   "id": "bagayevskaya",
-   "name": "Багаевская",
-   "thiMax7": 71.7,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    61,
-    65.4,
-    67.5,
-    68.1,
-    69.7,
-    71.4,
-    71.7
-   ]
-  },
-  {
-   "id": "bokovskaya",
-   "name": "Боковская",
-   "thiMax7": 70.1,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    56.4,
-    61,
-    63.4,
-    66.3,
-    64.7,
-    69,
-    70.1
-   ]
-  },
-  {
-   "id": "kazanskaya",
-   "name": "Казанская",
-   "thiMax7": 69.9,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    55.8,
-    60.3,
-    63,
-    65.5,
-    65.8,
-    68.1,
-    69.9
-   ]
-  },
-  {
-   "id": "veselyy",
-   "name": "Весёлый",
-   "thiMax7": 71,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    59.8,
-    64.7,
-    66.9,
-    68.3,
-    69.9,
-    70.7,
-    71
-   ]
-  },
-  {
-   "id": "romanovskaya",
-   "name": "Романовская",
-   "thiMax7": 71.5,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.9,
-    64.1,
-    65.5,
-    68,
-    69.1,
-    71.3,
-    71.5
-   ]
-  },
-  {
-   "id": "dubovskoye",
-   "name": "Дубовское",
-   "thiMax7": 70.9,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    57.5,
-    63.1,
-    65,
-    68,
-    69.2,
-    70.9,
-    70.3
-   ]
-  },
-  {
-   "id": "yegorlykskaya",
-   "name": "Егорлыкская",
-   "thiMax7": 70.9,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    59.2,
-    63.6,
-    65.6,
-    67.2,
-    68.7,
-    68.4,
-    70.9
-   ]
-  },
-  {
-   "id": "zavetnoye",
-   "name": "Заветное",
-   "thiMax7": 70.7,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    56.9,
-    62.6,
-    65.4,
-    68.5,
-    69.3,
-    70.7,
-    69.4
-   ]
-  },
-  {
-   "id": "zimovniki",
-   "name": "Зимовники",
-   "thiMax7": 70.6,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.2,
-    63.7,
-    65.2,
-    68.6,
-    69.8,
-    70.1,
-    70.6
-   ]
-  },
-  {
-   "id": "kagalnitskaya",
-   "name": "Кагальницкая",
-   "thiMax7": 72,
-   "days72": 1,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    60.3,
-    64.7,
-    67.1,
-    68.3,
-    70.2,
-    71.9,
-    72
-   ]
-  },
-  {
-   "id": "kashary",
-   "name": "Кашары",
-   "thiMax7": 71.1,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    57.5,
-    62,
-    63.7,
-    66.5,
-    64.8,
-    70.4,
-    71.1
-   ]
-  },
-  {
-   "id": "krasny_sulin",
-   "name": "Красный Сулин",
-   "thiMax7": 71.3,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    59.3,
-    64.4,
-    65.9,
-    66.5,
-    67.7,
-    69.2,
-    71.3
-   ]
-  },
-  {
-   "id": "kuybyshevo",
-   "name": "Куйбышево",
-   "thiMax7": 72.4,
-   "days72": 1,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    61.6,
-    66.1,
-    66.6,
-    68,
-    68.9,
-    71.3,
-    72.4
-   ]
-  },
-  {
-   "id": "bol_martynovka",
-   "name": "Большая Мартыновка",
-   "thiMax7": 71.8,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.8,
-    64.5,
-    65.9,
-    67.6,
-    69.5,
-    70.7,
-    71.8
-   ]
-  },
-  {
-   "id": "matveev_kurgan",
-   "name": "Матвеев Курган",
-   "thiMax7": 72.6,
-   "days72": 1,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    61.6,
-    66.4,
-    66.4,
-    68.2,
-    69.4,
-    71.3,
-    72.6
-   ]
-  },
-  {
-   "id": "chaltyr",
-   "name": "Чалтырь",
-   "thiMax7": 72.2,
-   "days72": 1,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    59.6,
-    64.4,
-    65.8,
-    66.1,
-    68.1,
-    71.5,
-    72.2
-   ]
-  },
-  {
-   "id": "pokrovskoye",
-   "name": "Покровское",
-   "thiMax7": 70.8,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    61.4,
-    66.5,
-    66,
-    67.7,
-    68.8,
-    68.8,
-    70.8
-   ]
-  },
-  {
-   "id": "oblivskaya",
-   "name": "Обливская",
-   "thiMax7": 70.7,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    57.3,
-    62,
-    64.4,
-    67.1,
-    66.8,
-    70.7,
-    70.4
-   ]
-  },
-  {
-   "id": "orlovskiy",
-   "name": "Орловский",
-   "thiMax7": 71,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.3,
-    63.7,
-    65,
-    67.8,
-    69.7,
-    69.5,
-    71
-   ]
-  },
-  {
-   "id": "peschanokopskoye",
-   "name": "Песчанокопское",
-   "thiMax7": 71.3,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    58.9,
-    62.7,
-    65,
-    67.4,
-    68.8,
-    69.9,
-    71.3
-   ]
-  },
-  {
-   "id": "proletarsk",
-   "name": "Пролетарск",
-   "thiMax7": 70.9,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    59.5,
-    64.4,
-    66.2,
-    68.4,
-    69.9,
-    70.2,
-    70.9
-   ]
-  },
-  {
-   "id": "remontnoye",
-   "name": "Ремонтное",
-   "thiMax7": 69.7,
-   "days72": 0,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    57.8,
-    62.9,
-    64.4,
-    67.4,
-    69.7,
-    69.6,
-    69.5
-   ]
-  },
-  {
-   "id": "rodionovo_nesv",
-   "name": "Родионово-Несветайская",
-   "thiMax7": 72.6,
-   "days72": 1,
-   "days80": 0,
-   "precip7": 0,
-   "perDay": [
-    60.8,
-    66.2,
-    67.2,
-    67.5,
-    69.1,
-    70.4,
-    72.6
-   ]
-  },
-  {
-   "id": "sovetskaya",
-   "name": "Советская",
    "thiMax7": 70.5,
    "days72": 0,
    "days80": 0,
    "precip7": 0,
    "perDay": [
-    57,
-    61.5,
-    63.8,
-    66.8,
-    66,
+    61.9,
+    63.9,
+    66.9,
+    65.7,
+    70.5,
+    70.3,
+    68.5
+   ]
+  },
+  {
+   "id": "ust_donetsk",
+   "name": "Усть-Донецкий",
+   "thiMax7": 71,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0.6,
+   "perDay": [
+    64.1,
+    65.7,
+    67.3,
+    68.4,
+    69.6,
+    71,
+    70.6
+   ]
+  },
+  {
+   "id": "bagayevskaya",
+   "name": "Багаевская",
+   "thiMax7": 72.7,
+   "days72": 3,
+   "days80": 0,
+   "precip7": 0.6,
+   "perDay": [
+    65.9,
+    67.1,
+    68.9,
     70,
+    72.5,
+    72.5,
+    72.7
+   ]
+  },
+  {
+   "id": "bokovskaya",
+   "name": "Боковская",
+   "thiMax7": 70.4,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    61.3,
+    63.6,
+    66.6,
+    66.1,
+    70.2,
+    70.4,
+    68.5
+   ]
+  },
+  {
+   "id": "kazanskaya",
+   "name": "Казанская",
+   "thiMax7": 69.2,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0.4,
+   "perDay": [
+    61.1,
+    63.2,
+    66,
+    63.6,
+    68.7,
+    69.2,
+    64.4
+   ]
+  },
+  {
+   "id": "veselyy",
+   "name": "Весёлый",
+   "thiMax7": 73.1,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 0.5,
+   "perDay": [
+    65.3,
+    66.6,
+    68.8,
+    70.1,
+    71.5,
+    72.6,
+    73.1
+   ]
+  },
+  {
+   "id": "romanovskaya",
+   "name": "Романовская",
+   "thiMax7": 73.3,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    65.2,
+    66.5,
+    68.4,
+    69.6,
+    71.7,
+    72.5,
+    73.3
+   ]
+  },
+  {
+   "id": "dubovskoye",
+   "name": "Дубовское",
+   "thiMax7": 73.1,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    64,
+    66.3,
+    68.1,
+    69.3,
+    71.6,
+    72.4,
+    73.1
+   ]
+  },
+  {
+   "id": "yegorlykskaya",
+   "name": "Егорлыкская",
+   "thiMax7": 72.8,
+   "days72": 1,
+   "days80": 0,
+   "precip7": 0.5,
+   "perDay": [
+    64.2,
+    65.5,
+    67.8,
+    69.1,
+    70.9,
+    71.7,
+    72.8
+   ]
+  },
+  {
+   "id": "zavetnoye",
+   "name": "Заветное",
+   "thiMax7": 71.6,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    63.6,
+    65.8,
+    67.9,
+    69.2,
+    70.9,
+    71.2,
+    71.6
+   ]
+  },
+  {
+   "id": "zimovniki",
+   "name": "Зимовники",
+   "thiMax7": 73,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    64.7,
+    66.5,
+    68.5,
+    69.9,
+    71.3,
+    72.1,
+    73
+   ]
+  },
+  {
+   "id": "kagalnitskaya",
+   "name": "Кагальницкая",
+   "thiMax7": 73.1,
+   "days72": 3,
+   "days80": 0,
+   "precip7": 1.1,
+   "perDay": [
+    65.3,
+    66.6,
+    69.1,
+    70,
+    72.1,
+    72.7,
+    73.1
+   ]
+  },
+  {
+   "id": "kashary",
+   "name": "Кашары",
+   "thiMax7": 70.5,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    62.7,
+    63.9,
+    66.7,
+    65.7,
+    69.9,
+    70.5,
+    67.8
+   ]
+  },
+  {
+   "id": "krasny_sulin",
+   "name": "Красный Сулин",
+   "thiMax7": 71.2,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 1.4,
+   "perDay": [
+    64.9,
+    65.9,
+    67.9,
+    68.5,
+    70.4,
+    71,
+    71.2
+   ]
+  },
+  {
+   "id": "kuybyshevo",
+   "name": "Куйбышево",
+   "thiMax7": 71.3,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 3.9,
+   "perDay": [
+    66.4,
+    67.1,
+    69.3,
+    69.2,
+    71.3,
+    69.8,
     70.5
+   ]
+  },
+  {
+   "id": "bol_martynovka",
+   "name": "Большая Мартыновка",
+   "thiMax7": 72.9,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    64.9,
+    66.5,
+    68.2,
+    69.6,
+    71.4,
+    72.1,
+    72.9
+   ]
+  },
+  {
+   "id": "matveev_kurgan",
+   "name": "Матвеев Курган",
+   "thiMax7": 71.5,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 2.7,
+   "perDay": [
+    66.7,
+    67.3,
+    69.5,
+    69.5,
+    71.5,
+    69.7,
+    70.6
+   ]
+  },
+  {
+   "id": "chaltyr",
+   "name": "Чалтырь",
+   "thiMax7": 72.1,
+   "days72": 1,
+   "days80": 0,
+   "precip7": 1.9,
+   "perDay": [
+    64.5,
+    66.1,
+    67.1,
+    69.6,
+    71.9,
+    71.6,
+    72.1
+   ]
+  },
+  {
+   "id": "pokrovskoye",
+   "name": "Покровское",
+   "thiMax7": 70.7,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 2.1,
+   "perDay": [
+    66.4,
+    67.1,
+    68.8,
+    69.1,
+    70.7,
+    67.7,
+    69.2
+   ]
+  },
+  {
+   "id": "oblivskaya",
+   "name": "Обливская",
+   "thiMax7": 70.9,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    62.7,
+    65.1,
+    67.4,
+    69.2,
+    70.7,
+    70.9,
+    70.9
+   ]
+  },
+  {
+   "id": "orlovskiy",
+   "name": "Орловский",
+   "thiMax7": 72.6,
+   "days72": 1,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    64.3,
+    65.7,
+    68.2,
+    69.6,
+    70.2,
+    71.4,
+    72.6
+   ]
+  },
+  {
+   "id": "peschanokopskoye",
+   "name": "Песчанокопское",
+   "thiMax7": 72.8,
+   "days72": 1,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    63.8,
+    65.2,
+    67.3,
+    69.2,
+    70.3,
+    71.2,
+    72.8
+   ]
+  },
+  {
+   "id": "proletarsk",
+   "name": "Пролетарск",
+   "thiMax7": 73.1,
+   "days72": 1,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    65,
+    66.7,
+    68.9,
+    69.7,
+    71,
+    71.7,
+    73.1
+   ]
+  },
+  {
+   "id": "remontnoye",
+   "name": "Ремонтное",
+   "thiMax7": 71,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    63.4,
+    64.9,
+    67.1,
+    69,
+    70.1,
+    70.5,
+    71
+   ]
+  },
+  {
+   "id": "rodionovo_nesv",
+   "name": "Родионово-Несветайская",
+   "thiMax7": 72.4,
+   "days72": 2,
+   "days80": 0,
+   "precip7": 1.6,
+   "perDay": [
+    66.4,
+    67.1,
+    68.9,
+    69.9,
+    72.1,
+    71.9,
+    72.4
+   ]
+  },
+  {
+   "id": "sovetskaya",
+   "name": "Советская",
+   "thiMax7": 71.1,
+   "days72": 0,
+   "days80": 0,
+   "precip7": 0,
+   "perDay": [
+    62,
+    64.3,
+    66.9,
+    66.9,
+    70.3,
+    71.1,
+    69.2
    ]
   },
   {
    "id": "tarasovskiy",
    "name": "Тарасовский",
-   "thiMax7": 71.4,
+   "thiMax7": 70.6,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.8,
    "perDay": [
-    57.8,
-    62.5,
-    64.1,
-    66.7,
-    66.4,
-    70,
-    71.4
+    63.2,
+    64,
+    67.1,
+    67.8,
+    69.8,
+    70.6,
+    67.9
    ]
   },
   {
    "id": "tacinskaya",
    "name": "Тацинская",
-   "thiMax7": 69.9,
+   "thiMax7": 70.5,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.6,
    "perDay": [
-    57.7,
-    62.3,
-    64.8,
-    66.4,
-    66.2,
-    69.1,
-    69.9
+    63.4,
+    65.1,
+    67.3,
+    68.6,
+    70,
+    70.5,
+    69.5
    ]
   },
   {
    "id": "tselina",
    "name": "Целина",
-   "thiMax7": 70.6,
-   "days72": 0,
+   "thiMax7": 72.5,
+   "days72": 1,
    "days80": 0,
    "precip7": 0.3,
    "perDay": [
-    58.9,
-    63.3,
-    65.8,
-    67.4,
-    68.9,
-    68.5,
-    70.6
+    64.1,
+    65.6,
+    68,
+    69.2,
+    70.4,
+    71.7,
+    72.5
    ]
   },
   {
    "id": "chertkovo",
    "name": "Чертково",
-   "thiMax7": 70.2,
+   "thiMax7": 68.7,
    "days72": 0,
    "days80": 0,
-   "precip7": 0.1,
+   "precip7": 2.8,
    "perDay": [
-    57.4,
-    61.4,
-    63,
-    65.6,
-    63.7,
-    68.8,
-    70.2
+    62.1,
+    62.6,
+    66.1,
+    63.6,
+    68.3,
+    68.7,
+    63.5
    ]
   },
   {
    "id": "kamensk",
    "name": "Каменск-Шахтинский",
-   "thiMax7": 70.8,
+   "thiMax7": 70.7,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 0.6,
    "perDay": [
-    59,
-    64,
-    65.2,
-    67.1,
-    67.2,
-    68.9,
-    70.8
+    64.6,
+    65.3,
+    68,
+    68.8,
+    70.7,
+    70.7,
+    70.3
    ]
   },
   {
    "id": "novoshahtinsk",
    "name": "Новошахтинск",
-   "thiMax7": 70.6,
+   "thiMax7": 70.3,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.8,
    "perDay": [
-    58.7,
-    64.2,
+    64.3,
     65.2,
-    65.8,
-    66.9,
-    68.6,
-    70.6
+    67.1,
+    67.8,
+    69.7,
+    70,
+    70.3
    ]
   },
   {
    "id": "gukovo",
    "name": "Гуково",
-   "thiMax7": 70.1,
+   "thiMax7": 69.3,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.5,
    "perDay": [
-    57.9,
-    62.9,
-    64.2,
-    64.9,
-    65.8,
-    67.8,
-    70.1
+    63.6,
+    63.9,
+    66.3,
+    66.7,
+    68.9,
+    69.2,
+    69.3
    ]
   },
   {
    "id": "zverevo",
    "name": "Зверево",
-   "thiMax7": 69.6,
+   "thiMax7": 69.2,
    "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.2,
    "perDay": [
-    57.7,
-    62.9,
-    64.1,
-    64.9,
-    65.7,
-    67.4,
-    69.6
+    63.3,
+    64.3,
+    66.3,
+    66.7,
+    68.9,
+    69.2,
+    69.1
    ]
   },
   {
    "id": "donetsk_ro",
    "name": "Донецк",
-   "thiMax7": 72.1,
-   "days72": 1,
+   "thiMax7": 71.5,
+   "days72": 0,
    "days80": 0,
-   "precip7": 0,
+   "precip7": 1.4,
    "perDay": [
-    59.5,
-    64.4,
-    65.5,
-    67.8,
-    67.5,
-    70.2,
-    72.1
+    65,
+    65.4,
+    68.4,
+    68.7,
+    71.5,
+    70.6,
+    69.9
    ]
   }
  ],
  "yesterday": {
-  "date": "2026-10-03",
+  "date": "2026-10-04",
   "perStation": {
    "rostov": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.4
+    "maxThi": 59.1
    },
    "taganrog": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.9
+    "maxThi": 58.8
    },
    "shakhty": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.7
+    "maxThi": 59
    },
    "volgodonsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.3
+    "maxThi": 58.2
    },
    "novocherkassk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.7
+    "maxThi": 59.7
    },
    "bataysk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.7
+    "maxThi": 59.9
    },
    "azov": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.8
+    "maxThi": 58.9
    },
    "salsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.1
+    "maxThi": 59
    },
    "millerovo": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 54.1
+    "maxThi": 57.2
    },
    "morozovsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 51.5
+    "maxThi": 57.3
    },
    "belaya_kalitva": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57
+    "maxThi": 58.3
    },
    "zernograd": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.8
+    "maxThi": 59
    },
    "semikarakorsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.5
+    "maxThi": 59.5
    },
    "konstantinovsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.1
+    "maxThi": 58.7
    },
    "vyoshenskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55.1
+    "maxThi": 56.1
    },
    "ust_donetsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.7
+    "maxThi": 58.1
    },
    "bagayevskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59.6
+    "maxThi": 60.3
    },
    "bokovskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 54
+    "maxThi": 56.1
    },
    "kazanskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 54.8
+    "maxThi": 55.4
    },
    "veselyy": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.9
+    "maxThi": 59.8
    },
    "romanovskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.7
+    "maxThi": 58.5
    },
    "dubovskoye": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55.1
+    "maxThi": 57.5
    },
    "yegorlykskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.8
+    "maxThi": 58.9
    },
    "zavetnoye": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55.2
+    "maxThi": 56.7
    },
    "zimovniki": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.9
+    "maxThi": 57.8
    },
    "kagalnitskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59.3
+    "maxThi": 59.8
    },
    "kashary": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 52.2
+    "maxThi": 57.3
    },
    "krasny_sulin": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.9
+    "maxThi": 59.3
    },
    "kuybyshevo": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59.7
+    "maxThi": 61.2
    },
    "bol_martynovka": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.2
+    "maxThi": 58.7
    },
    "matveev_kurgan": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59.7
+    "maxThi": 61.3
    },
    "chaltyr": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.6
+    "maxThi": 58.7
    },
    "pokrovskoye": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59.5
+    "maxThi": 61.1
    },
    "oblivskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 50.4
+    "maxThi": 57.1
    },
    "orlovskiy": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.5
+    "maxThi": 58.1
    },
    "peschanokopskoye": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.7
+    "maxThi": 58.6
    },
    "proletarsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 58.3
+    "maxThi": 59.1
    },
    "remontnoye": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.7
+    "maxThi": 57.4
    },
    "rodionovo_nesv": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 59
+    "maxThi": 60.3
    },
    "sovetskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 53.4
+    "maxThi": 56.6
    },
    "tarasovskiy": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55
+    "maxThi": 57.8
    },
    "tacinskaya": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55.2
+    "maxThi": 57.3
    },
    "tselina": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.5
+    "maxThi": 58.8
    },
    "chertkovo": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 54.1
+    "maxThi": 57.1
    },
    "kamensk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.8
+    "maxThi": 58.8
    },
    "novoshahtinsk": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.7
+    "maxThi": 58.7
    },
    "gukovo": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 56.1
+    "maxThi": 57.9
    },
    "zverevo": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 55.2
+    "maxThi": 57.7
    },
    "donetsk_ro": {
     "hours": 12,
     "hot72": 0,
-    "maxThi": 57.5
+    "maxThi": 59
    }
   }
  },
- "digest": []
+ "digest": [
+  "Батайск: THI>72 — 3 дн из 7",
+  "Багаевская: THI>72 — 3 дн из 7",
+  "Кагальницкая: THI>72 — 3 дн из 7"
+ ]
 }
