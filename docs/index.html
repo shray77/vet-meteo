@@ -140,6 +140,13 @@ footer b{color:var(--muted)}
 .ob-legend{display:flex;gap:12px;flex-wrap:wrap;padding:7px 12px;border-top:1px solid var(--border2);font-size:10px;color:var(--muted)}
 .ob-dot{display:inline-block;width:7px;height:7px;transform:rotate(45deg);margin-right:5px;vertical-align:0}
 
+/* ── экономика теплового стресса ── */
+#milkPanel summary{cursor:pointer;list-style:none}
+#milkPanel summary::-webkit-details-marker{display:none}
+#milkPanel summary:hover .p-h{background:var(--panel3)}
+.milk-in{background:var(--panel2);border:1px solid var(--border);border-radius:3px;color:var(--text);font:inherit;padding:4px 8px;width:90px;text-align:center}
+.milk-in:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+
 /* ── история THI ───────────────────── */
 #histCanvas{width:100%;height:180px;display:block}
 .hist-select{font:inherit;font-size:11px;background:var(--panel3);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:2px 6px;letter-spacing:.04em;cursor:pointer}
@@ -227,6 +234,15 @@ footer b{color:var(--muted)}
     <div class="kpi neut"><div class="k-l">осадки 24 ч макс</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
     <div class="kpi neut"><div class="k-l">ветер макс</div><div class="k-v"><span class="skl">…</span></div><div class="k-s">—</div></div>
   </div>
+
+  <details class="panel" id="milkPanel">
+    <summary><div class="p-h"><b>ЭКОНОМИКА ТЕПЛОВОГО СТРЕССА</b><span>головы × THI → литры и рубли · Ravagnolo &amp; Misztal 2000</span><span class="right" id="milkHint">развернуть ▾</span></div></summary>
+    <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <label>голов дойных: <input class="milk-in" id="milkHeads" type="number" min="0" step="1" value="200"></label>
+      <label>цена молока, ₽/л: <input class="milk-in" id="milkPrice" type="number" min="0" step="0.5" value="40"></label>
+      <span id="milkOut" style="flex:1;min-width:260px;font-size:12px;line-height:1.5">…</span>
+    </div>
+  </details>
 
   <div class="panel">
     <div class="p-h"><b>КАРТА · РОСТОВСКАЯ ОБЛ.</b><span id="mapSub">станции · цвет/радиус = THI · ромбы — вспышки</span><span class="right" id="mapRight"></span></div>
@@ -479,7 +495,33 @@ function renderKPIs(){
     const d72=os.reduce((a,b)=>b.days72>a.days72?b:a);
     setKPI(k[3],d72.days72+' дн',d72.days72?d72.name+' · превышение THI 72':'превышений не ждём','crit',d72.days72>0?'crit':'good');
   }
+  renderMilk();
 }
+
+/* ── экономика теплового стресса: головы × потери × цена = рубли ── */
+function renderMilk(){
+  const L=S.latest,O=S.outlook;
+  const heads=Math.max(0,+$('milkHeads').value||0), price=Math.max(0,+$('milkPrice').value||0);
+  const out=$('milkOut');
+  if(!out)return;
+  if(!L){out.textContent='данные загружаются…';return;}
+  if(!heads||!price){out.textContent='укажи поголовье и цену молока — посчитаю потери';return;}
+  const st=L.stations||[];
+  if(!st.length){out.textContent='—';return;}
+  const mx=st.reduce((a,b)=>b.thi>a.thi?b:a);
+  const perCow=Math.max(0,(mx.thi-72)*0.2); /* Ravagnolo & Misztal 2000, как в полной версии */
+  const day=perCow*heads;
+  let days72=0;
+  if(O&&(O.stations||[]).length)days72=(O.stations||[]).reduce((a,b)=>b.days72>a.days72?b:a).days72||0;
+  const rub=v=>Math.round(v).toLocaleString('ru-RU'), lit=v=>Math.round(v).toLocaleString('ru-RU');
+  out.innerHTML = day>0
+    ? ('сейчас: <b style="color:var(--accent)">'+mx.name+'</b> · THI '+fmt(mx.thi)+' → потери ~<b>'+lit(day)+' л/сут</b> ≈ <b>'+rub(day*price)+' ₽/сут</b>'
+       +(days72?(' · по прогнозу '+days72+' стресс. дн.: ~<b>'+lit(day*days72)+' л</b> ≈ <b>'+rub(day*days72*price)+' ₽</b>'):'')
+       +'<br><span style="color:var(--dim)">0.2 кг/гол за ед. THI&gt;72, худшая станция области; вентиляция/душение снижают потери — это оценка сверху.</span>')
+    : ('сейчас теплового стресса нет (THI макс '+fmt(mx.thi)+' &lt; 72)'+(days72?(' · в прогнозе '+days72+' дн. с THI&gt;72 — включится автоматически'):''));
+}
+['milkHeads','milkPrice'].forEach(id=>{const el=$(id);el&&el.addEventListener('input',renderMilk);});
+(function(){const mp=$('milkPanel');mp&&mp.addEventListener('toggle',()=>{$('milkHint').textContent=mp.open?'свернуть ▴':'развернуть ▾';if(mp.open)renderMilk();});})();
 function setKPI(el,v,s,oldC,newC){
   el.querySelector('.k-v').textContent=v;
   el.querySelector('.k-s').textContent=s;
