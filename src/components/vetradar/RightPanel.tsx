@@ -19,6 +19,7 @@ import TriggerFeed from './TriggerFeed';
 import StationTable from './StationTable';
 import EnsembleChart from './EnsembleChart';
 import SurveillancePanel from './SurveillancePanel';
+import MilkEconomics from './MilkEconomics';
 import { SpeciesStressBlock, VectorBlock } from './StressBlocks';
 
 function sourceBadge(s: 'openmeteo' | 'proxy' | 'synthetic') {
@@ -108,6 +109,7 @@ export default function RightPanel(props: {
                 ? `потери удоя ~${milkLoss(today.thiMax)} кг/гол/сут · THImax ${today.thiMax.toFixed(0)}`
                 : 'теплового стресса нет'}
             </div>
+            <MilkEconomics outlook={a.outlook} />
             <div>
               <div className="mb-1.5 font-mono text-[11px] font-bold tracking-wider text-[#f0c674]">
                 ТРИГГЕРЫ ({props.triggers.length})
