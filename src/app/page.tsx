@@ -165,6 +165,15 @@ export default function Home() {
           >
             АРХИВ Actions {archiveLive ? '✓' : '—'}
           </Badge>
+          <a
+            className="rounded border border-[#3a4030] bg-[#232819] px-2 py-0.5 font-mono text-[10px] text-[#8a8f78] hover:text-[#f0c674]"
+            href="https://shray77.github.io/vetflu-site/"
+            target="_blank"
+            rel="noopener"
+            title="VetFlu — окна риска ВПГП по флайвеям РФ (родственный инструмент экосистемы)"
+          >
+            🦆 VETFLU
+          </a>
           <Badge className="bg-[#232819] font-mono text-[10px] text-[#8a8f78]">
             {loading ? '…' : `${Object.keys(assessments).length} точек`}
           </Badge>
