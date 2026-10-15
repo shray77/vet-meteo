@@ -1,6 +1,6 @@
 # ВЕТМЕТЕО (vet-meteo) / ВетРадар-61
 
-**Продвинутый метеопрогноз для ветеринарных служб: 16 станций Ростовской области, «сейчас + 7 дней», тепловые/холодовые стрессы, трансмиссивные и инвазионные модели, эпиднадзор, АЧС-география, OSINT.**
+**Продвинутый метеопрогноз для ветеринарных служб: 49 станций Ростовской области, «сейчас + 7 дней», тепловые/холодовые стрессы, трансмиссивные и инвазионные модели, эпиднадзор, АЧС-география, OSINT.**
 
 [![stations](https://github.com/shray77/vet-meteo/actions/workflows/stations.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/stations.yml)
 [![daily-outlook](https://github.com/shray77/vet-meteo/actions/workflows/daily-outlook.yml/badge.svg)](https://github.com/shray77/vet-meteo/actions/workflows/daily-outlook.yml)
@@ -41,7 +41,7 @@ Open-Meteo (+ их ансамбль ECMWF), METAR NOAA, GitHub Actions как «
                         ┌─────────────────────────────────────────────┐
                         │  GITHUB ACTIONS (этот репозиторий)          │
                         │  stations.yml — ежечасно (7-я мин UTC):   │
-                        │   METAR + Open-Meteo × 16 станций + SWR     │
+                        │   METAR + Open-Meteo × 49 станций + SWR     │
                         │   → latest.json + snapshots/ + TG-алерты    │
                         │  daily-outlook.yml — 06:17 МСК:             │
                         │   7-дневный дайджест → outlook.json + TG    │
@@ -150,7 +150,7 @@ Open-Meteo **ensemble API** (ECMWF IFS 0.25°, 51 член, без ключа): 
 
 ## Кучка метеостанций + GitHub Actions
 
-`data/stations.json` — реестр (16 станций + 6 METAR-аэропортов). `stations.yml` ходит
+`data/stations.json` — реестр (49 станций + 6 METAR-аэропортов). `stations.yml` ходит
 каждый час (7-я минута — вне пика нагрузки GitHub): METAR + мульти-точечный Open-Meteo запрос → THI/BRD-лайт → коммит
 `data/latest.json` + почасовой снапшот дня. История хранится 30 дней, потом режется.
 Сайт читает архив напрямую с `raw.githubusercontent.com` (CDN, CORS `*`) — бейдж
