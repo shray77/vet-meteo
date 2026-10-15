@@ -6,7 +6,10 @@
  * 1. METAR (NOAA aviationweather, JSON) по аэропортам-ориентирам.
  * 2. Open-Meteo: мульти-точечные запросы чанками ≤ 25 станций с ретраями
  *    (49 точек: все 43 района Ростовской обл. + 2 ретрая на чанк).
- * 3. Считаем THI/THImax7/осадки-24ч/BRD-лайт.
+ * 3. Считаем THI/THIadj/CCI/THImax7/осадки-24ч/BRD-лайт.
+ *    CCI (Mader et al. 2010, ред. Erratum 2011) — круглый год: жара И холод.
+ *    Порт верифицирован по erratum-скану OK Mesonet 2016 и pyIEM; детали —
+ *    в src/lib/models/advanced.ts (cci*) и scripts/test_models.ts.
  * 4. Пишем data/latest.json + data/forecast.json (часовой прогноз 48 ч из тех же
  *    ответов — БЕЗ дополнительных запросов к API) + дописываем снапшот дня
  *    data/snapshots/YYYY-MM-DD.json, подрезаем историю старше 30 дней.
@@ -28,6 +31,28 @@ const thi = (t, rh) => {
 /** THIadj (Mader et al. 2006): ветер обезветривает, радиация догружает. */
 const thiMader = (t, rh, wind, swr) =>
   4.51 + thi(t, rh) - 1.992 * Math.max(0, wind) + 0.0068 * Math.max(0, swr || 0);
+
+/* ---- CCI (Comprehensive Climate Index, Mader et al. 2010; Erratum 2011) ----
+ * Порт зеркалит src/lib/models/advanced.ts (cci*); сверено со сканом erratum
+ * из OK Mesonet Cattle Comfort Description 2016 и с pyIEM meteorology.cci().
+ * Степень −2 в WSC — НА АРГУМЕНТЕ логарифма (не на самом log, как в MT-порте). */
+const cciRh = (t, rh) =>
+  Math.exp(0.00182 * rh + 1.8e-5 * t * rh) *
+  (0.000054 * t * t + 0.00192 * t - 0.0246) * (rh - 30);
+const cciWs = (ws) => {
+  const w = Math.max(0, Math.min(25, ws || 0));
+  const lg = Math.log(Math.pow(2.26 * w + 0.33, -2)) / Math.log(0.3);
+  const x =
+    (1 / Math.pow(2.26 * w + 0.23, 0.45)) *
+    (2.9 + 1.14e-6 * Math.pow(w, 2.5) - lg);
+  return -6.56 / Math.exp(x) - 0.00566 * w * w + 3.33;
+};
+const cciRad = (t, r0) => {
+  const r = Math.max(0, Math.min(1400, r0 || 0));
+  return 0.0076 * r - 0.00002 * r * t + 0.00005 * t * t * Math.sqrt(r) + 0.1 * t - 2;
+};
+const cci = (t, rh, wind, swr) =>
+  +(t + cciRh(t, rh) + cciWs(wind) + cciRad(t, swr)).toFixed(1);
 
 function rhFromTd(t, td) {
   const es = 6.112 * Math.exp((17.67 * t) / (t + 243.5));
@@ -190,18 +215,19 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
       precip24: +precip24.toFixed(1),
       thi: +thi(t, rh).toFixed(1),
       thiAdj: +thiAdj.toFixed(1),
+      cci: cci(t, rh, wind, swr),
       thiMaxToday: +(thi(daily.temperature_2m_max?.[0] ?? t, Math.max(30, (daily.relative_humidity_2m_mean?.[0] ?? 60) - 12))).toFixed(1),
       thiMax7: +thiMax7.toFixed(1),
       brd,
       source: 'open-meteo',
     };
     stations.push(row);
-    snapRow[st.id] = [row.t, row.rh, row.wind, row.thi, row.thiAdj];
+    snapRow[st.id] = [row.t, row.rh, row.wind, row.thi, row.thiAdj, row.cci];
 
     /* часовой прогноз 48 ч — из ЭТОГО ЖЕ ответа Open-Meteo (без доп. запросов) */
     if (hIdx >= 0) {
       const FH = 48;
-      const rec = { id: st.id, name: st.name, thi: [], adj: [], t: [], rh: [], wind: [], wd: [], pr: [] };
+      const rec = { id: st.id, name: st.name, thi: [], adj: [], cci: [], t: [], rh: [], wind: [], wd: [], pr: [] };
       for (let k = 0; k < FH && hIdx + k < hTimes.length; k++) {
         const t2 = w.hourly?.temperature_2m?.[hIdx + k];
         const rh2 = w.hourly?.relative_humidity_2m?.[hIdx + k];
@@ -214,6 +240,7 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
         rec.pr.push(+(w.hourly?.precipitation?.[hIdx + k] ?? 0).toFixed(1));
         rec.thi.push(+thi(t2, rh2).toFixed(1));
         rec.adj.push(+thiMader(t2, rh2, wind2, w.hourly?.shortwave_radiation?.[hIdx + k] ?? 0).toFixed(1));
+        rec.cci.push(cci(t2, rh2, wind2, w.hourly?.shortwave_radiation?.[hIdx + k] ?? 0));
       }
       if (rec.thi.length) {
         fcSt.push(rec);

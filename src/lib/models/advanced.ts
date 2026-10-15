@@ -196,6 +196,113 @@ export function wnvRisk(daily: { tMax: number; tMin: number; precipSum: number }
   };
 }
 
+/* ============ 8. CCI — Comprehensive Climate Index (Mader et al. 2010) ============ */
+
+export interface CciClass {
+  cci: number;
+  zone: string;
+  kind: 'heat' | 'cold' | 'ok';
+  color: string;
+  note: string;
+}
+
+/**
+ * CCI (Mader, Johnson & Gaughan 2010, JAS 88:2153; формула исправлена
+ * Erratum 2011, JAS 89:2955) — «эквивалентная температура» комфорта КРС:
+ * CCI = T + RHC(влажность) + WSC(ветер) + RADC(солнечная радиация).
+ * Действует круглый год (жара И холод), T ∈ примерно −30…45 °C.
+ *
+ * Верификация порта 2026-10-15 (scripts/test_models.ts + research/cci_verify.mjs):
+ *  — RHC сходится с sanity-цифрами Lee et al. 2025 (Sci Rep, Oklahoma Mesonet):
+ *    при T=45 рост RH 30→100 даёт +15.6 °C; при T=−30 — −2.7 °C;
+ *  — WSC по ОРИГИНАЛЬНОМУ erratum (скан из OK Mesonet Cattle Comfort Description
+ *    2016): показатель e = 1/(2.26·WS+0.23)^0.45 × (2.9 + 1.14e-6·WS^2.5 −
+ *    log_0.3((2.26·WS+0.33)^(−2))) — степень −2 стоит НА АРГУМЕНТЕ логарифма
+ *    (как в pyIEM); кривая гладкая на всей WS>0, штиль +3.3, 10 м/с ≈ −8.8.
+ *    ВНИМАНИЕ: порт Montana Mesonet (mt-climate-office/mesonet-dashboard cci.ts)
+ *    читает [log_0.3(y)]^(−2) с гардом WS<1 → 0 — их кривая ветра почти нулевая
+ *    (10 м/с ≈ −0.6 °C) и с «бампом» +1.2 °C при 2 м/с; расходится с erratum.
+ *  — RADC: R < 0 (ночной офсет датчика) клампится к 0 (как D-CCI-1 в Montana).
+ * Классификация: Mader et al. 2010 / OK Mesonet 2016 — жаркие 25/30/35/40/45,
+ * холодовые взрослые 0/−10/−20/−30/−40, новорождённые 5/0/−5/−10/−15 °C.
+ */
+
+/** RHC — поправка относительной влажности (база 30 %), °C. */
+export function cciRhCorr(t: number, rh: number): number {
+  const h = Math.max(0, Math.min(100, rh));
+  return (
+    Math.exp(0.00182 * h + 1.8e-5 * t * h) *
+    (0.000054 * t * t + 0.00192 * t - 0.0246) *
+    (h - 30)
+  );
+}
+
+/** WSC — поправка скорости ветра (м/с), °C. Гладкая на WS ≥ 0 (штиль ≈ +3.3). */
+export function cciWindCorr(windMs: number): number {
+  const ws = Math.max(0, Math.min(25, windMs ?? 0));
+  const lg = Math.log(Math.pow(2.26 * ws + 0.33, -2)) / Math.log(0.3);
+  const x =
+    (1 / Math.pow(2.26 * ws + 0.23, 0.45)) *
+    (2.9 + 1.14e-6 * Math.pow(ws, 2.5) - lg);
+  return -6.56 / Math.exp(x) - 0.00566 * ws * ws + 3.33;
+}
+
+/** RADC — поправка солнечной радиации (Вт/м²), °C. Отрицательная R → 0 (ночь/офсет). */
+export function cciRadCorr(t: number, swrWm2: number): number {
+  const r = Math.max(0, Math.min(1400, swrWm2 ?? 0));
+  return (
+    0.0076 * r - 0.00002 * r * t + 0.00005 * t * t * Math.sqrt(r) + 0.1 * t - 2
+  );
+}
+
+/** CCI, °C — эквивалентная температура комфорта КРС (круглогодично). */
+export function cci(t: number, rh: number, windMs: number, swrWm2 = 0): number {
+  const v = t + cciRhCorr(t, rh) + cciWindCorr(windMs) + cciRadCorr(t, swrWm2);
+  return +v.toFixed(1);
+}
+
+/**
+ * Класс стресса по CCI (Mader et al. 2010; пороги в °C — Montana Mesonet,
+ * округлённые с °F 77/87/96/105/113 и холодовых 33/14/−4/−22/−40 для взрослых).
+ * newborn — телята/неакклиматизированный скот: холодовые пороги на ~9 °F мягче.
+ */
+export function cciClass(v: number, newborn = false): CciClass {
+  if (v >= 45)
+    return { cci: v, zone: 'жара: экстремальная опасность', kind: 'heat', color: '#7f1d1d', note: 'падёж возможен >5%: тень+вода+душение, никаких перемещений' };
+  if (v >= 40)
+    return { cci: v, zone: 'жара: экстремальная', kind: 'heat', color: '#c0392b', note: 'смертность выше 5% при экспозиции: интенсивное охлаждение' };
+  if (v >= 35)
+    return { cci: v, zone: 'жара: сильная', kind: 'heat', color: '#d95f2b', note: 'продуктивность падает >20%: вода/вентиляция/кормление на ночь' };
+  if (v >= 30)
+    return { cci: v, zone: 'жара: умеренная', kind: 'heat', color: '#e0a636', note: 'снижение привесов/удоя до 20%: тень и вода обязательны' };
+  if (v >= 25)
+    return { cci: v, zone: 'жара: лёгкая', kind: 'heat', color: '#a8b845', note: 'следить за поведением, доступ к воде/тени' };
+  if (!newborn) {
+    if (v >= 0)
+      return { cci: v, zone: 'комфорт', kind: 'ok', color: '#5f9e5f', note: 'термонейтрально (взрослый скот)' };
+    if (v >= -10)
+      return { cci: v, zone: 'холод: лёгкий', kind: 'cold', color: '#7fa8c9', note: '+энергия на обогрев ~5%, укрытие от ветра' };
+    if (v >= -20)
+      return { cci: v, zone: 'холод: умеренный', kind: 'cold', color: '#5d8cb5', note: 'рост сухого корма 18–36%, подстилка, ветер-брейки' };
+    if (v >= -30)
+      return { cci: v, zone: 'холод: сильный', kind: 'cold', color: '#3d6d99', note: 'Cold Caution: телята и ослабленный скот — под наблюдение' };
+    if (v >= -40)
+      return { cci: v, zone: 'холод: экстремальный', kind: 'cold', color: '#28527a', note: 'Cold Danger: укрытия обязательны, риск обморожений' };
+    return { cci: v, zone: 'холод: экстремальная опасность', kind: 'cold', color: '#1c3a5e', note: 'падёж: никакой экспозиции' };
+  }
+  if (v >= 5)
+    return { cci: v, zone: 'комфорт', kind: 'ok', color: '#5f9e5f', note: 'термонейтрально (новорождённые)' };
+  if (v >= 0)
+    return { cci: v, zone: 'холод: лёгкий', kind: 'cold', color: '#7fa8c9', note: 'молодняк: сухая подстилка, укрытие' };
+  if (v >= -5)
+    return { cci: v, zone: 'холод: умеренный', kind: 'cold', color: '#5d8cb5', note: 'телятники: обогрев, контроль сквозняков' };
+  if (v >= -10)
+    return { cci: v, zone: 'холод: сильный', kind: 'cold', color: '#3d6d99', note: 'риск для новорождённых: домики/обогрев обязательны' };
+  if (v >= -15)
+    return { cci: v, zone: 'холод: экстремальный', kind: 'cold', color: '#28527a', note: 'опасть: немедленное укрытие' };
+  return { cci: v, zone: 'холод: экстремальная опасность', kind: 'cold', color: '#1c3a5e', note: 'падёж: никакой экспозиции' };
+}
+
 /* ============ 7. Culicoides (миджсы, Шмалленберг/блютанг) ============ */
 
 export interface MidgeResult {

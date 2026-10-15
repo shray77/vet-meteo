@@ -274,6 +274,7 @@ footer b{color:var(--muted)}
             <th class="sortable" data-k="rh">RH %<span class="arr"></span></th>
             <th>ветер</th>
             <th class="sortable" data-k="thi">THI<span class="arr"></span></th>
+            <th class="sortable" data-k="cci" title="Comprehensive Climate Index (Mader 2010, ред. Erratum 2011): эквивалентная T с поправками RH/ветер/солнце — жара и холод круглый год">CCI<span class="arr"></span></th>
             <th>тренд 72 ч</th>
             <th class="sortable" data-k="thiMaxToday">THI макс сег<span class="arr"></span></th>
             <th class="sortable" data-k="brd">BRD риск<span class="arr"></span></th>
@@ -287,7 +288,7 @@ footer b{color:var(--muted)}
         <span><i style="background:var(--z2bg)"></i>68–72 — лёгкий стресс</span>
         <span><i style="background:var(--z3bg)"></i>72–80 — тепловой стресс</span>
         <span><i style="background:var(--z4bg)"></i>≥80 — сильный стресс</span>
-        <span style="margin-left:auto">BRD — риск бронхопневмонии телят, %</span>
+        <span style="margin-left:auto">CCI — комфорт КРС (Mader 2010): жара ≥25/30/35/40/45 · холод &lt;0/−10/−20/−30/−40 · BRD — риск бронхопневмонии телят, %</span>
       </div>
   </div>
 
@@ -361,7 +362,7 @@ footer b{color:var(--muted)}
 
   <footer>
     <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — каждые ~20 мин, метроном-цепочка воркфлоу + кроны 7/27/47 как резерв, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
-    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a><br>
+    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); CCI — Comprehensive Climate Index (Mader et al. 2010, ред. Erratum 2011): эквивалентная температура комфорта КРС круглый год = T + поправки RH/ветер/солнце (жаркие пороги 25/30/35/40/45 °C, холодовые для взрослых 0/−10/−20/−30/−40 °C, новорождённые на 5–10 °C мягче); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Слой вспышек — WAHIS/ФСВПС, только Ростовская обл., 2019+ (часть координатов — центроид района; источник — куративный бэкап vet-heatmap). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a><br>
     <b style="color:var(--accent)">Дисклеймер:</b> информационный сервис «как есть», не ветеринарная консультация и не официальный прогноз: индексы и модели рисков носят ознакомительный характер, консультируйтесь с ветеринарным врачом — даже если вы сами ветеринарный врач. <a href="./terms.html">Условия использования и дисклеймер →</a> · <a href="https://shray77.github.io/terms.html">условия экосистемы</a>
   </footer>
 
@@ -385,6 +386,19 @@ const ago=iso=>{const m=agoMin(iso);return m<60?m+' мин назад':Math.roun
 const COMPASS=['С','ССВ','СВ','ВСВ','В','ВЮВ','ЮВ','ЮЮВ','Ю','ЮЮЗ','ЮЗ','ЗЮЗ','З','ЗСЗ','СЗ','ССЗ'];
 const wdir2c=d=>(d==null||isNaN(d))?'—':COMPASS[Math.round(((d%360)+360)%360/22.5)%16];
 const zone=t=>t>=80?4:t>=72?3:t>=68?2:1;
+/* класс CCI (взрослый скот) → чип z1..z4 + подпись; пороги Mader 2010/OK Mesonet 2016 */
+const cciZone=v=>{
+  if(v>=45)return{i:4,t:'жара: экстремальная опасность (>45)',n:'падёж возможен >5%'};
+  if(v>=40)return{i:4,t:'жара: экстремальная (40–45)',n:'интенсивное охлаждение'};
+  if(v>=35)return{i:4,t:'жара: сильная (35–40)',n:'продуктивность −20% и более'};
+  if(v>=30)return{i:3,t:'жара: умеренная (30–35)',n:'тень и вода обязательны'};
+  if(v>=25)return{i:2,t:'жара: лёгкая (25–30)',n:'следить за поведением'};
+  if(v>=0)return{i:1,t:'комфорт',n:'термонейтрально'};
+  if(v>=-10)return{i:2,t:'холод: лёгкий (−10..0)',n:'+5% энергии, укрытие от ветра'};
+  if(v>=-20)return{i:3,t:'холод: умеренный (−20..−10)',n:'рост корма 18–36%, подстилка'};
+  if(v>=-30)return{i:4,t:'холод: сильный (−30..−20)',n:'ослабленный скот — под наблюдение'};
+  return{i:4,t:'холод: экстремальный (<−30)',n:'укрытия обязательны'};
+};
 const ZFG=['','var(--z1fg)','var(--z2fg)','var(--z3fg)','var(--z4fg)'];
 const WD=['вс','пн','вт','ср','чт','пт','сб'];
 async function jget(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(r.status);return r.json();}
@@ -591,9 +605,9 @@ function effStations(){
   if(off>0&&F&&F.h0)for(const f of (F.stations||[]))m[f.id]=f;
   return st.map(s=>{
     const f=m[s.id],arr=f&&(f.thi||[]);
-    if(!arr||!arr.length)return{s,fc:false,k:0,thi:s.thi,adj:s.thiAdj,t:s.t,rh:s.rh,wind:s.wind,wdir:s.wdir,pr:s.precip24};
+    if(!arr||!arr.length)return{s,fc:false,k:0,thi:s.thi,adj:s.thiAdj,cci:s.cci,t:s.t,rh:s.rh,wind:s.wind,wdir:s.wdir,pr:s.precip24};
     const k=Math.min(off,arr.length-1);
-    return{s,fc:true,k,thi:arr[k],adj:(f.adj||[])[k]!=null?(f.adj||[])[k]:null,t:(f.t||[])[k],rh:(f.rh||[])[k],wind:(f.wind||[])[k],wdir:(f.wd||[])[k],pr:(f.pr||[])[k]||0};
+    return{s,fc:true,k,thi:arr[k],adj:(f.adj||[])[k]!=null?(f.adj||[])[k]:null,cci:(f.cci||[])[k]!=null?(f.cci||[])[k]:null,t:(f.t||[])[k],rh:(f.rh||[])[k],wind:(f.wind||[])[k],wdir:(f.wd||[])[k],pr:(f.pr||[])[k]||0};
   });
 }
 function renderMap(){
@@ -613,13 +627,15 @@ function renderMap(){
       if(e.fc){
         const hh=addH(S.forecast.h0,e.k).slice(11,16);
         pop='<b>'+s.name+'</b> · ПРОГНОЗ +'+e.k+' ч ('+hh+' МСК)'+
-          '<br>THI '+fmt(e.thi)+(e.adj!=null?' · adj '+fmt(e.adj):'')+
+          '<br>THI '+fmt(e.thi)+(e.adj!=null?' · adj '+fmt(e.adj):'')+(e.cci!=null?' · CCI '+fmt(e.cci):'')+
           '<br>T '+fmt(e.t)+' °C · RH '+fmt(e.rh,0)+' % · ветер '+fmt(e.wind)+' м/с '+wdir2c(e.wdir)+
           '<br>осадки за час '+fmt(e.pr)+' мм'+
           '<br><span class="source-tag">open-meteo hourly · расчёт '+hhmm(S.forecast.generatedAt)+'</span>';
       }else{
-        pop='<b>'+s.name+'</b> · THI '+fmt(s.thi)+(s.thiAdj!=null?' · adj '+fmt(s.thiAdj):'')+
+        const cz=s.cci!=null?cciZone(s.cci):null;
+        pop='<b>'+s.name+'</b> · THI '+fmt(s.thi)+(s.thiAdj!=null?' · adj '+fmt(s.thiAdj):'')+(s.cci!=null?' · CCI '+fmt(s.cci):'')+
           '<br>T '+fmt(s.t)+' °C · RH '+fmt(s.rh,0)+' % · ветер '+fmt(s.wind)+' м/с '+wdir2c(s.wdir)+
+          (cz?'<br>CCI — '+cz.t:'')+
           '<br>THI макс сег '+fmt(s.thiMaxToday)+' · 7 дн '+fmt(s.thiMax7)+
           '<br>BRD-риск '+(s.brd==null?'—':fmt(s.brd,0))+' % · осадки 24 ч '+fmt(s.precip24)+' мм'+
           '<br><span class="source-tag">'+s.source+' · срез '+hhmm(Lv.generatedAt)+'</span>';
@@ -672,7 +688,7 @@ function renderMapSvg(){
 /* ── таблица станций ───────────────────── */
 function renderTable(){
   const L=S.latest,tb=$('stTable').tBodies[0];
-  if(!L){tb.innerHTML='<tr><td colspan="9" class="small-dim">нет данных</td></tr>';return;}
+  if(!L){tb.innerHTML='<tr><td colspan="10" class="small-dim">нет данных</td></tr>';return;}
   const st=[...(L.stations||[])].sort((a,b)=>{
     const k=S.sort.k,va=a[k],vb=b[k];
     if(typeof va==='string')return S.sort.dir*va.localeCompare(vb);
@@ -681,12 +697,14 @@ function renderTable(){
   tb.innerHTML=st.map(s=>{
     const z=zone(s.thi),zt=zone(s.thiMaxToday);
     const bcol=s.brd==null?'var(--muted)':s.brd>=75?'var(--z4fg)':s.brd>=50?'var(--z3fg)':s.brd>=25?'var(--z2fg)':'var(--z1fg)';
+    const cz=s.cci!=null?cciZone(s.cci):null;
     return '<tr>'
       +'<td><span class="st-name">'+s.name+'</span><span class="st-id">'+s.id+'</span></td>'
       +'<td>'+fmt(s.t)+'</td>'
       +'<td>'+fmt(s.rh,0)+'</td>'
       +'<td class="small-dim">'+fmt(s.wind)+' м/с '+wdir2c(s.wdir)+'</td>'
       +'<td><span class="chip z'+z+'">'+fmt(s.thi)+'</span></td>'
+      +(cz?('<td><span class="chip z'+cz.i+'" title="'+cz.t+' · '+cz.n+'">'+fmt(s.cci)+'</span></td>'):'<td class="small-dim">—</td>')
       +'<td>'+spark(hist(s.id))+'</td>'
       +'<td><span class="chip z'+zt+'" style="min-width:44px;font-size:11px">'+fmt(s.thiMaxToday)+'</span></td>'
       +'<td style="color:'+bcol+';font-weight:700">'+(s.brd==null?'—':fmt(s.brd,0))+'</td>'

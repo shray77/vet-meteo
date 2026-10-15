@@ -120,3 +120,68 @@ const scan = kulldorffScan(demoScanData(), [20, 40, 60, 80], 199);
 console.log('scan clusters:', scan.length, 'top:', JSON.stringify(scan[0]));
 const ens = perturbedEnsemble([{ date: '2026-09-06', thiMax: 74 }, { date: '2026-09-07', thiMax: 78 }]);
 console.log('perturbed ens:', ens.source, JSON.stringify(ens.days[0]));
+
+/* CCI (Mader et al. 2010; Erratum 2011) — ревизия 2026-10-15.
+ * Порт сверён со сканом erratum (OK Mesonet Cattle Comfort Description 2016,
+ * стр. 2) и sanity-цифрами Lee et al. 2025 (Sci Rep s41598-025-99621-5).
+ * WSC-кривая: штиль +3.33 → 1 м/с +0.59 → 2 −2.41 → 5 −6.51 → 10 −8.76 (гладкая).
+ * ВНИМАНИЕ: порт Montana Mesonet читает [log]^(−2) вместо log(y^(−2)) — их
+ * ветер почти нулевой; это расхождение зафиксировано в комментарии модели. */
+import { cci, cciRhCorr, cciWindCorr, cciRadCorr, cciClass } from '../src/lib/models/advanced';
+
+eq('CCI RHC(45,100) ~ +15.6 (Lee 2025: +16)', cciRhCorr(45, 100), 15.6, 0.7);
+eq('CCI RHC(-30,100) ~ −2.7 (Lee 2025: −3)', cciRhCorr(-30, 100), -2.7, 0.5);
+eq('CCI RHC(*,30)=0 база', cciRhCorr(25, 30), 0, 1e-9);
+
+eq('CCI WSC(0) штиль +3.33', cciWindCorr(0), 3.33, 0.01);
+eq('CCI WSC(1) +0.59', cciWindCorr(1), 0.59, 0.05);
+eq('CCI WSC(2) −2.41', cciWindCorr(2), -2.41, 0.1);
+eq('CCI WSC(5) −6.51', cciWindCorr(5), -6.51, 0.15);
+eq('CCI WSC(10) −8.76', cciWindCorr(10), -8.76, 0.2);
+{
+  // монотонность и конечность WSC на (0..25]
+  let mono = true;
+  let prev = Number.POSITIVE_INFINITY;
+  for (let ws = 0.05; ws <= 25; ws += 0.05) {
+    const v = cciWindCorr(ws);
+    if (!Number.isFinite(v) || v > prev + 1e-9) { mono = false; break; }
+    prev = v;
+  }
+  if (!mono) { console.log('FAIL CCI WSC монотонность/конечность'); process.exitCode = 1; }
+  else console.log('PASS CCI WSC монотонно убывает и конечна на (0..25]');
+}
+
+eq('CCI RADC(30,0) ночь +1.0', cciRadCorr(30, 0), 1.0, 1e-9);
+eq('CCI RADC(30,800) +7.87', cciRadCorr(30, 800), 7.87, 0.05);
+eq('CCI RADC(-30,0) ночь −5.0', cciRadCorr(-30, 0), -5.0, 1e-9);
+eq('CCI RADC(-30,500) солнце смягчает ~0.1', cciRadCorr(-30, 500), 0.1, 0.3);
+eq('CCI RADC отриц. радиация → clamp 0', cciRadCorr(20, -50), cciRadCorr(20, 0), 1e-12);
+
+/* цельный CCI: типовые срезы (значения из research/cci_verify.mjs) */
+eq('CCI(30,60,3,500)=34.0', cci(30, 60, 3, 500), 34.0, 0.15);
+eq('CCI(-15,85,2,0)=−23.5', cci(-15, 85, 2, 0), -23.5, 0.15);
+eq('CCI(25,55,4,600)=26.5', cci(25, 55, 4, 600), 26.5, 0.15);
+
+/* классификация (пороги Mader/OK Mesonet, °C) */
+const cls = (v: number, nb = false) => cciClass(v, nb).zone;
+if (cls(46) !== 'жара: экстремальная опасность' || cls(32) !== 'жара: умеренная' ||
+    cls(20) !== 'комфорт' || cls(-25) !== 'холод: сильный' || cls(-42) !== 'холод: экстремальная опасность') {
+  console.log('FAIL CCI классы взрослых'); process.exitCode = 1;
+} else console.log('PASS CCI классы взрослых');
+if (cls(6, true) !== 'комфорт' || cls(2, true) !== 'холод: лёгкий' || cls(-7, true) !== 'холод: сильный' || cls(-12, true) !== 'холод: экстремальный') {
+  console.log('FAIL CCI классы новорождённых'); process.exitCode = 1;
+} else console.log('PASS CCI классы новорождённых');
+
+/* сетка: CCI конечен и в разумном коридоре */
+{
+  let sane = true;
+  for (let t = -30; t <= 45; t += 5)
+    for (const rh of [20, 50, 90])
+      for (const ws of [0.5, 2, 5, 10])
+        for (const r of [0, 300, 900]) {
+          const v = cci(t, rh, ws, r);
+          if (!Number.isFinite(v) || v < -75 || v > 85) { sane = false; }
+        }
+  if (!sane) { console.log('FAIL CCI сетка'); process.exitCode = 1; }
+  else console.log('PASS CCI конечен и в коридоре [-75..85] на сетке');
+}
