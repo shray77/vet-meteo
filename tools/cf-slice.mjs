@@ -42,7 +42,7 @@ if (!d.generatedAt || Number.isNaN(Date.parse(d.generatedAt))) fail('generatedAt
 if (typeof d.region !== 'string' || !d.region) fail('region');
 if (!Array.isArray(d.stations)) fail('stations');
 if (!Array.isArray(d.metar)) fail('metar');
-const NEED = ['id', 'name', 'lat', 'lon', 't', 'rh', 'wind', 'wdir', 'precip24', 'thi', 'thiAdj', 'thiMaxToday', 'thiMax7', 'brd', 'source'];
+const NEED = ['id', 'name', 'lat', 'lon', 't', 'rh', 'wind', 'wdir', 'precip24', 'thi', 'thiAdj', 'cci', 'thiMaxToday', 'thiMax7', 'brd', 'source'];
 for (const s of d.stations) {
   for (const k of NEED) if (!(k in s)) fail(`станция ${s.id ?? '?'}: нет поля ${k}`);
 }
@@ -66,7 +66,7 @@ if (d.forecast) {
 const now = new Date(d.generatedAt);
 const dayKey = now.toISOString().slice(0, 10);
 const snapRow = {};
-for (const s of d.stations) snapRow[s.id] = [s.t, s.rh, s.wind, s.thi, s.thiAdj];
+for (const s of d.stations) snapRow[s.id] = [s.t, s.rh, s.wind, s.thi, s.thiAdj, s.cci];
 const snapDir = join(ROOT, 'data', 'snapshots');
 mkdirSync(snapDir, { recursive: true });
 const snapFile = join(snapDir, `${dayKey}.json`);
