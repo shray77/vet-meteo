@@ -172,7 +172,7 @@ export default function Home() {
             rel="noopener"
             title="VetFlu — окна риска ВПГП по флайвеям РФ (родственный инструмент экосистемы)"
           >
-            🦆 VETFLU
+            VETFLU
           </a>
           <Badge className="bg-[#232819] font-mono text-[10px] text-[#8a8f78]">
             {loading ? '…' : `${Object.keys(assessments).length} точек`}
