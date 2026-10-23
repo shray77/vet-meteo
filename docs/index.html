@@ -11,7 +11,7 @@
 :root{
   --bg:#0b0d08; --panel:#10130a; --panel2:#151910; --panel3:#1a1f12;
   --border:#3a4030; --border2:#262b1d;
-  --text:#d8dcc8; --muted:#8a8f78; --dim:#5c614e;
+  --text:#d8dcc8; --muted:#8a8f78; --dim:#7a8070;
   --accent:#f0c674; --green:#7fbf6f; --red:#d96060; --orange:#e8956d;
   --z1bg:#1d3a1d; --z1fg:#7fbf6f; --z2bg:#33300f; --z2fg:#f0c674;
   --z3bg:#3a2412; --z3fg:#e8956d; --z4bg:#3a1414; --z4fg:#e07070;
@@ -817,7 +817,7 @@ function renderHist(){
   const y=v=>P.t+(H-P.t-P.b)*(1-(v-mn)/(mx-mn));
   const x=i=>P.l+(W-P.l-P.r)*(i/(series.length-1));
   // сетка + ось Y
-  ctx.strokeStyle='#262b1d';ctx.fillStyle='#5c614e';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
+  ctx.strokeStyle='#262b1d';ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
   for(let v=Math.ceil(mn);v<=mx;v+=Math.max(1,Math.round((mx-mn)/5))){
     ctx.beginPath();ctx.moveTo(P.l,y(v));ctx.lineTo(W-P.r,y(v));ctx.stroke();
     ctx.fillText(v,P.l-6,y(v)+3);
@@ -848,7 +848,7 @@ function renderHist(){
   const li=series.length-1;
   ctx.fillStyle=HEXZ[zone(vs[li])-1];ctx.beginPath();ctx.arc(x(li),y(series[li].thi),3,0,7);ctx.fill();
   // ось X — время МСК (каждая ~6-я точка)
-  ctx.fillStyle='#5c614e';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
   const step=Math.max(1,Math.round(series.length/8));
   for(let i=0;i<series.length;i+=step){
     const d=new Date(series[i].ts);
@@ -933,7 +933,7 @@ function drawFc(fc){
     }else i++;
   }
   /* сетка Y */
-  ctx.strokeStyle='#262b1d';ctx.fillStyle='#5c614e';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
+  ctx.strokeStyle='#262b1d';ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
   const stepY=Math.max(1,Math.round((mx-mn)/5));
   for(let v=Math.ceil(mn);v<=mx;v+=stepY){
     ctx.beginPath();ctx.moveTo(P.l,y(v));ctx.lineTo(W-P.r,y(v));ctx.stroke();
@@ -986,7 +986,7 @@ function drawFc(fc){
   ctx.strokeStyle='rgba(216,220,200,.35)';ctx.beginPath();ctx.moveTo(x(0),P.t);ctx.lineTo(x(0),H-P.b);ctx.stroke();
   ctx.fillStyle='#8a8f78';ctx.textAlign='left';ctx.fillText('сейчас',x(0)+4,P.t+9);
   /* X-метки */
-  ctx.fillStyle='#5c614e';ctx.textAlign='center';
+  ctx.fillStyle='#7a8070';ctx.textAlign='center';
   for(let k=0;k<n;k+=6)ctx.fillText(addH(F.h0,k).slice(11,16),x(k),H-7);
   ctx.lineWidth=1;
   /* мета + окна стресса */
