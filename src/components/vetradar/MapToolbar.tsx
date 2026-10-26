@@ -27,8 +27,10 @@ export default function MapToolbar({
   onLayers: (l: LayerToggles) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-[#3a4030] bg-[#14170f] px-3 py-2">
-      <div className="flex items-center gap-2">
+    // мобильная компакция (Task 167): на <sm тулбар одним скроллящимся рядом
+    // (было 3 ряда flex-wrap ≈ 110px); десктоп sm+ без изменений
+    <div className="flex flex-nowrap items-center gap-x-4 gap-y-2 overflow-x-auto rounded border border-[#3a4030] bg-[#14170f] px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
+      <div className="flex shrink-0 items-center gap-2">
         <Label className="font-mono text-[10px] text-[#8a8f78]">подложка</Label>
         <ToggleGroup
           type="single"
@@ -40,9 +42,9 @@ export default function MapToolbar({
           <ToggleGroupItem value="dark" className="h-6 px-2 font-mono text-[10px]">тёмн (Esri)</ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex flex-nowrap items-center gap-x-3 gap-y-1 sm:flex-wrap">
         {(Object.keys(LAYER_LABELS) as (keyof LayerToggles)[]).map((k) => (
-          <div key={k} className="flex items-center gap-1.5">
+          <div key={k} className="flex shrink-0 items-center gap-1.5">
             <Switch
               checked={layers[k]}
               onCheckedChange={(v) => onLayers({ ...layers, [k]: v })}

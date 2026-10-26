@@ -143,22 +143,24 @@ export default function Home() {
     <div className="flex h-screen flex-col bg-[#0b0d08] text-[#d8dcc8]">
       <header className="flex flex-wrap items-center gap-2 border-b border-[#3a4030] bg-[#10130a] px-3 py-2">
         <span className="font-mono text-sm font-bold tracking-widest text-[#f0c674]">
-          ВЕТМЕТЕО / ВЕТРАДАР-61
+          ВЕТМЕТЕО<span className="hidden sm:inline"> / ВЕТРАДАР-61</span>
         </span>
         <span className="hidden font-mono text-[10px] text-[#8a8f78] sm:inline">
           вет. метеопрогноз и эпид-риски Ростовской обл. · сейчас + 7 дней
         </span>
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          <Badge className={`${badge.c} hover:${badge.c} font-mono text-[10px]`}>{badge.t}</Badge>
+        {/* мобильная компакция (Task 167): одна строка — статус + инфо,
+            вторичные бейджи скрыты <sm; было 4 ряда flex-wrap (~216px) */}
+        <div className="ml-auto flex items-center gap-1.5 overflow-x-auto sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Badge className={`${badge.c} font-mono text-[10px] whitespace-nowrap`}>{badge.t}</Badge>
           <Badge
-            className={`font-mono text-[10px] ${
+            className={`hidden font-mono text-[10px] sm:inline-flex ${
               metarLive ? 'bg-[#1d3a1d] text-[#7fbf6f]' : 'bg-[#3a1d1d] text-[#d98a80]'
             }`}
           >
             METAR {metarLive ? `×${metarStations.length}` : '—'}
           </Badge>
           <Badge
-            className={`font-mono text-[10px] ${
+            className={`hidden font-mono text-[10px] md:inline-flex ${
               archiveLive ? 'bg-[#1d3a1d] text-[#7fbf6f]' : 'bg-[#232819] text-[#8a8f78]'
             }`}
             title="hourly GitHub Actions: опрос станций → коммит снапшотов в data/"
@@ -166,7 +168,7 @@ export default function Home() {
             АРХИВ Actions {archiveLive ? '✓' : '—'}
           </Badge>
           <a
-            className="rounded border border-[#3a4030] bg-[#232819] px-2 py-0.5 font-mono text-[10px] text-[#8a8f78] hover:text-[#f0c674]"
+            className="hidden rounded border border-[#3a4030] bg-[#232819] px-2 py-0.5 font-mono text-[10px] text-[#8a8f78] hover:text-[#f0c674] md:inline-block"
             href="https://shray77.github.io/vetflu-site/"
             target="_blank"
             rel="noopener"
@@ -174,7 +176,7 @@ export default function Home() {
           >
             VETFLU
           </a>
-          <Badge className="bg-[#232819] font-mono text-[10px] text-[#8a8f78]">
+          <Badge className="hidden bg-[#232819] font-mono text-[10px] text-[#8a8f78] sm:inline-flex">
             {loading ? '…' : `${Object.keys(assessments).length} точек`}
           </Badge>
           <InfoDialog />

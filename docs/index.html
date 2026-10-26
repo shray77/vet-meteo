@@ -63,6 +63,28 @@ header{
 .btn:hover{background:var(--panel2);border-color:var(--accent)}
 .btn:disabled{opacity:.45;cursor:wait}
 
+/* ── мобильная компакция хедера/тулбара (Task 167) ──
+   было: .h-in flex-wrap → лого + 5 бейджей + кнопки переносились на 3–4 ряда
+   (216px из 852, 25% экрана). Стало: 2 ряда — лого+кнопки, бейджи одним
+   скроллящимся рядом (~64px). Десктоп >620px не тронут. */
+@media(max-width:620px){
+  .h-in{display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 8px;padding:6px 10px}
+  .logo{grid-area:1/1/2/2;min-width:0;gap:7px}
+  .logo svg{width:22px;height:22px}
+  .logo b{font-size:12.5px}
+  .logo small{display:none}
+  .h-right{grid-area:1/2/2/3;margin-left:0;gap:6px;flex-wrap:nowrap}
+  #updated{display:none}
+  .h-badges{grid-area:2/1/3/3;flex-wrap:nowrap;overflow-x:auto;min-width:0;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:1px}
+  .h-badges::-webkit-scrollbar{display:none}
+  .h-badges .badge{flex:none}
+  .tm-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .tm-bar::-webkit-scrollbar{display:none}
+  .tm-bar .btn,.tm-bar .tm-label,.tm-bar .tm-note{flex:none}
+  .p-h{flex-wrap:nowrap}
+  .p-h span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
 /* ── error banner ───────────────────── */
 #errBanner{display:none;margin:10px 0 0;border:1px solid var(--z4bg);background:var(--z4bg);color:var(--z4fg);padding:7px 12px;border-radius:2px;font-size:11px;letter-spacing:.04em}
 
