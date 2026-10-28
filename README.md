@@ -150,7 +150,7 @@ Open-Meteo **ensemble API** (ECMWF IFS 0.25°, 51 член, без ключа): 
 
 ## Кучка метеостанций + GitHub Actions
 
-`data/stations.json` — реестр (49 станций + 6 METAR-аэропортов). `stations.yml` ходит
+`data/stations.json` — реестр (49 станций + 7 METAR-аэропортов). `stations.yml` ходит
 каждый час (7-я минута — вне пика нагрузки GitHub): METAR + мульти-точечный Open-Meteo запрос → THI/BRD-лайт → коммит
 `data/latest.json` + почасовой снапшот дня. История хранится 30 дней, потом режется.
 Сайт читает архив напрямую с `raw.githubusercontent.com` (CDN, CORS `*`) — бейдж

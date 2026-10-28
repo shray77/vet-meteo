@@ -10,7 +10,10 @@ export const METAR_STATIONS: { icao: string; name: string; lat: number; lon: num
   { icao: 'URKK', name: 'Краснодар (Пашковский)', lat: 45.03, lon: 39.17 },
   { icao: 'URWI', name: 'Элиста', lat: 46.38, lon: 44.33 },
   { icao: 'UUOO', name: 'Воронеж', lat: 51.7, lon: 39.23 },
-  { icao: 'URMT', name: 'Минеральные Воды', lat: 44.22, lon: 43.08 },
+  // URMT тут был подписан «Минеральные Воды» — перепутан с URMM; выровнен
+  // с реестром data/stations.json (Task 183): Ставрополь + добавлен URMM.
+  { icao: 'URMT', name: 'Ставрополь (Шпаковское)', lat: 45.11, lon: 42.11 },
+  { icao: 'URMM', name: 'Минеральные Воды', lat: 44.23, lon: 43.08 },
 ];
 
 /** RH из T и Td (Магнус). */

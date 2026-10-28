@@ -22,6 +22,10 @@ function omUrl(lat: number, lon: number): string {
     daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
     timezone: 'Europe/Moscow',
     forecast_days: '8',
+    // КРИТИЧНО: без windspeed_unit=ms Open-Meteo отдаёт ветер в км/ч, а модели
+    // (BRD-пороги штиля 2 м/с, WCI, HLI/AHL, плюм-адвекция) и подписи UI ждут м/с.
+    // Фикс Task 183: раньше ветер трактовался как м/с с ошибкой ×3,6 (как в CI до 07.09.2026).
+    windspeed_unit: 'ms',
   });
   return `${OPEN_METEO}?${params}`;
 }

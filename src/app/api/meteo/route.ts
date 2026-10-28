@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
     timezone: 'Europe/Moscow',
     forecast_days: '8',
+    // ветер в м/с — модели и подписи UI ждут м/с (фикс Task 183, было ×3,6)
+    windspeed_unit: 'ms',
   });
   try {
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {

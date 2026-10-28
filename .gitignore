@@ -44,3 +44,7 @@ worklog.md
 .next/
 .env
 upload/
+
+# выхлоп тулчейна агентов и тестовые скрины (Task 183: вычищены из git)
+tool-results/
+scripts/*.png
