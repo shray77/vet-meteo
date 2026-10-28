@@ -215,4 +215,4 @@ docs/                        статический дашборд GitHub Pages 
 «как есть», не является ветеринарной консультацией: консультируйтесь с ветеринарным
 врачом — даже если вы сами ветеринарный врач.
 
-Полные условия: https://shray77.github.io/vet-meteo/terms.html · экосистема: https://shray77.github.io/terms.html
+Полные условия: https://shray77.github.io/vet-meteo/terms.html · экосистема: https://shray77.github.io/

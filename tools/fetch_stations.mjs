@@ -14,6 +14,8 @@
  *    ответов — БЕЗ дополнительных запросов к API) + дописываем снапшот дня
  *    data/snapshots/YYYY-MM-DD.json, подрезаем историю старше 30 дней.
  * 5. Ветер — строго м/с (windspeed_unit=ms; до 07.09.2026 был км/ч — юнит-баг).
+ * 6. dayKey снапшотов — по МСК (+3 ч к UTC), как подписи коммитов воркфлоу;
+ *    past_days=1 даёт вчерашний tMax — базу для BRD-похолодания.
  *
  * Коммит делает воркфлоу (git-шаги вынесены в YAML), скрипт только пишет файлы.
  */
@@ -119,6 +121,10 @@ const OM_FIELDS = {
   daily: 'temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_speed_10m_mean,precipitation_sum',
   timezone: 'Europe/Moscow',
   forecast_days: '7',
+  // вчерашний день: daily[0] становится «вчера» — от него берём tMaxPrev для BRD
+  // (до этого «резкое похолодание к прошлым суткам» было недостижимо:
+  // при d===0 базы для сравнения не существовало)
+  past_days: '1',
   // КРИТИЧНО: без этого Open-Meteo отдаёт ветер в км/ч, а радар и формулы
   // (THIadj Мадера, BRD-порог 2,5 м/с штиля) ждут м/с — ветер был завышен ×3,6.
   windspeed_unit: 'ms',
@@ -159,7 +165,8 @@ function brdLite(d) {
 /* ---------- main ---------- */
 const now = new Date();
 const generatedAt = now.toISOString();
-const dayKey = now.toISOString().slice(0, 10);
+// даты снапшотов — по МСК (как подписи коммитов и вся сводка проекта)
+const dayKey = new Date(now.getTime() + 3 * 3600e3).toISOString().slice(0, 10);
 
 const [metar, om] = await Promise.all([fetchMetar(), fetchOpenMeteo().catch((e) => null)]);
 
@@ -172,8 +179,14 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
   STATIONS.stations.forEach((st, i) => {
     const w = om[i];
     const cur = w.current ?? {};
-    const t = cur.temperature_2m ?? 0;
-    const rh = cur.relative_humidity_2m ?? 60;
+    const t = cur.temperature_2m ?? null;
+    const rh = cur.relative_humidity_2m ?? null;
+    if (t == null || rh == null) {
+      // нет current — не выдумываем t=0/rh=60 (THI от несуществующей погоды):
+      // станция пропускается в срезе и снапшоте этого часа
+      console.error(`станция ${st.id} (${st.name}): нет current у Open-Meteo — пропущена`);
+      return;
+    }
     const wind = cur.wind_speed_10m ?? 0;
     const wdir = cur.wind_direction_10m ?? null;
     // солнечная радиация текущего часа (ночь → 0/отсутствует)
@@ -186,18 +199,27 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
     if (hIdx < 0 && hTimes.length) hIdx = hTimes.findIndex((t) => t >= curHour); // ISO сравнивается лексикографически корректно
     const swr = hIdx >= 0 ? (w.hourly?.shortwave_radiation?.[hIdx] ?? 0) : 0;
     const thiAdj = thiMader(t, rh, wind, swr);
-    const precip24 = (w.hourly?.precipitation ?? []).slice(0, 24).reduce((a, b) => a + (b ?? 0), 0);
+    // осадки за 24 ч, ЗАКАНЧИВАЯСЬ текущим часом (hourly теперь включает и прошлые дни)
+    const prArr = w.hourly?.precipitation ?? [];
+    const prFrom = hIdx >= 0 ? Math.max(0, hIdx - 23) : 0;
+    const prTo = hIdx >= 0 ? hIdx + 1 : 24;
+    const precip24 = prArr.slice(prFrom, prTo).reduce((a, b) => a + (b ?? 0), 0);
     const daily = w.daily ?? {};
     let thiMax7 = -999;
-    let tMaxPrev = null;
-    let brd = 0;
     const days = daily.time ?? [];
-    for (let d = 0; d < days.length; d++) {
+    // с past_days=1 нулевой день — вчера: «сегодня» ищем по ключу МСК
+    const todayIdx = Math.max(0, days.indexOf(dayKey));
+    // вчерашний максимум — база BRD-похолодания (past_days=1; раньше при d===0
+    // базы не было и ветки tempDrop < -5 / < -3 были недостижимы)
+    let tMaxPrev = todayIdx > 0 ? (daily.temperature_2m_max?.[todayIdx - 1] ?? null) : null;
+    let brd = 0;
+    for (let d = todayIdx; d < days.length; d++) {
       const tMax = daily.temperature_2m_max?.[d] ?? 0;
       const tMin = daily.temperature_2m_min?.[d] ?? 0;
       const rhM = daily.relative_humidity_2m_mean?.[d] ?? 60;
       thiMax7 = Math.max(thiMax7, thi(tMax, Math.max(30, rhM - 12)));
-      if (d === 0) {
+      if (d === todayIdx) {
+        // drop < 0 — похолодание к прошлым суткам
         const drop = tMaxPrev == null ? 0 : tMax - tMaxPrev;
         brd = brdLite({ tMax, tMin, rhMean: rhM, precipSum: daily.precipitation_sum?.[d] ?? 0, windMean: daily.wind_speed_10m_mean?.[d] ?? 3, tempDrop: drop });
       }
@@ -216,7 +238,7 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
       thi: +thi(t, rh).toFixed(1),
       thiAdj: +thiAdj.toFixed(1),
       cci: cci(t, rh, wind, swr),
-      thiMaxToday: +(thi(daily.temperature_2m_max?.[0] ?? t, Math.max(30, (daily.relative_humidity_2m_mean?.[0] ?? 60) - 12))).toFixed(1),
+      thiMaxToday: +(thi(daily.temperature_2m_max?.[todayIdx] ?? t, Math.max(30, (daily.relative_humidity_2m_mean?.[todayIdx] ?? 60) - 12))).toFixed(1),
       thiMax7: +thiMax7.toFixed(1),
       brd,
       source: 'open-meteo',
@@ -281,8 +303,8 @@ if (!snap.hours.some((h) => h.ts === generatedAt)) {
 }
 writeFileSync(snapFile, JSON.stringify(snap) + '\n');
 
-/* ---------- подрезка истории (30 дней) ---------- */
-const cut = new Date(now.getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
+/* ---------- подрезка истории (30 дней; имена файлов — даты МСК) ---------- */
+const cut = new Date(now.getTime() - 30 * 86_400_000 + 3 * 3600e3).toISOString().slice(0, 10);
 for (const f of readdirSync(snapDir)) {
   const d = f.replace('.json', '');
   if (d < cut) {

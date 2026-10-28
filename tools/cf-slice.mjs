@@ -64,7 +64,8 @@ if (d.forecast) {
 
 /* ---------- 3. снапшот дня (логика 1-в-1 из fetch_stations.mjs) ---------- */
 const now = new Date(d.generatedAt);
-const dayKey = now.toISOString().slice(0, 10);
+// даты снапшотов — по МСК (+3 ч), как в fetch_stations.mjs и подписях коммитов
+const dayKey = new Date(now.getTime() + 3 * 3600e3).toISOString().slice(0, 10);
 const snapRow = {};
 for (const s of d.stations) snapRow[s.id] = [s.t, s.rh, s.wind, s.thi, s.thiAdj, s.cci];
 const snapDir = join(ROOT, 'data', 'snapshots');
@@ -84,8 +85,8 @@ if (!snap.hours.some((h) => h.ts === d.generatedAt)) {
 }
 writeFileSync(snapFile, JSON.stringify(snap) + '\n');
 
-/* ---------- 4. подрезка истории (30 дней) ---------- */
-const cut = new Date(now.getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
+/* ---------- 4. подрезка истории (30 дней; имена файлов — даты МСК) ---------- */
+const cut = new Date(now.getTime() - 30 * 86_400_000 + 3 * 3600e3).toISOString().slice(0, 10);
 for (const f of readdirSync(snapDir)) {
   const dd = f.replace('.json', '');
   if (dd < cut) {

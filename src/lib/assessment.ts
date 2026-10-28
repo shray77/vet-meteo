@@ -20,7 +20,8 @@ function dayLabel(date: string): string {
 function nearestDistrict(lat: number, lon: number): { name: string; dist: number } | null {
   let best: { name: string; dist: number } | null = null;
   for (const d of CCHF_DISTRICTS) {
-    const dist = Math.hypot(d.lat - lat, d.lon - lon) * 111;
+    // эквидистантная поправка: 1° долготы ≈ 111·cos(lat) км — иначе E-W дистанции завышены ~30%
+    const dist = Math.hypot(d.lat - lat, (d.lon - lon) * Math.cos((lat * Math.PI) / 180)) * 111;
     if (!best || dist < best.dist) best = { name: d.name, dist };
   }
   return best;

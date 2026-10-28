@@ -299,7 +299,7 @@ export function cciClass(v: number, newborn = false): CciClass {
   if (v >= -10)
     return { cci: v, zone: 'холод: сильный', kind: 'cold', color: '#3d6d99', note: 'риск для новорождённых: домики/обогрев обязательны' };
   if (v >= -15)
-    return { cci: v, zone: 'холод: экстремальный', kind: 'cold', color: '#28527a', note: 'опасть: немедленное укрытие' };
+    return { cci: v, zone: 'холод: экстремальный', kind: 'cold', color: '#28527a', note: 'опасно: немедленное укрытие' };
   return { cci: v, zone: 'холод: экстремальная опасность', kind: 'cold', color: '#1c3a5e', note: 'падёж: никакой экспозиции' };
 }
 

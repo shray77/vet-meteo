@@ -7,10 +7,10 @@ OSINT CLI для ВЕТРАДАР-61: открытые MQTT-брокеры по 
 «демо-выгрузка» / вкладкой OSINT в дашборде.
 
 Примеры:
-  # Shodan с ключом
+  # Shodan с ключом (или без --key: env SHODAN_API_KEY)
   python tools/osint_cli.py --provider shodan --key YOUR_KEY --out mqtt_live.json
 
-  # Censys
+  # Censys (или без --key/--secret: env CENSYS_API_ID / CENSYS_API_SECRET)
   python tools/osint_cli.py --provider censys --key API_ID --secret API_SECRET
 
   # Демо-файл (без ключа, вымышленные точки)
@@ -118,8 +118,10 @@ def to_geojson(points, note):
 def main():
     ap = argparse.ArgumentParser(description="VETRADAR-61 OSINT MQTT CLI")
     ap.add_argument("--provider", choices=["shodan", "censys"], default="shodan")
-    ap.add_argument("--key", help="Shodan API key или Censys API ID")
-    ap.add_argument("--secret", help="Censys API secret")
+    ap.add_argument("--key", help="Shodan API key или Censys API ID "
+                    "(иначе env SHODAN_API_KEY / CENSYS_API_ID)")
+    ap.add_argument("--secret", help="Censys API secret "
+                    "(иначе env CENSYS_API_SECRET)")
     ap.add_argument("--demo", action="store_true",
                     help="использовать демо-выгрузку без ключей")
     ap.add_argument("--out", default="mqtt_live.json",
@@ -135,14 +137,19 @@ def main():
         out_path = src
     else:
         if args.provider == "shodan":
-            if not args.key:
-                sys.exit("Нужен --key (Shodan API key)")
-            points = shodan_scan(args.key)
+            # argv-ключ виден в ps/shell-history — по умолчанию берём env
+            key = args.key or os.environ.get("SHODAN_API_KEY")
+            if not key:
+                sys.exit("Нужен --key или env SHODAN_API_KEY")
+            points = shodan_scan(key)
             note = f"Shodan live scan, {len(points)} точек в bbox"
         else:
-            if not args.key or not args.secret:
-                sys.exit("Нужны --key (API ID) и --secret (Censys)")
-            points = censys_scan(args.key, args.secret)
+            api_id = args.key or os.environ.get("CENSYS_API_ID")
+            secret = args.secret or os.environ.get("CENSYS_API_SECRET")
+            if not api_id or not secret:
+                sys.exit("Нужны --key (API ID) и --secret, "
+                         "или env CENSYS_API_ID / CENSYS_API_SECRET")
+            points = censys_scan(api_id, secret)
             note = f"Censys live scan, {len(points)} точек в bbox"
         fc = to_geojson(points, note)
         out_dir = os.path.join(os.path.dirname(__file__), "..",

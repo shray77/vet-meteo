@@ -41,13 +41,16 @@ function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): num
 function suitability(lat: number, lon: number): number {
   let s = 0.25;
   for (const f of FORESTS) if (pointInPoly(lat, lon, f.coords)) { s += 0.5; break; }
+  // речной бонус — максимум один: у слияний не задваивается
+  let riverBonusDone = false;
   for (const r of RIVERS) {
     for (let i = 1; i < r.coords.length; i++) {
       const [p1, p2] = [r.coords[i - 1], r.coords[i]];
       const d = pointSegDistKm(lat, lon, p1, p2);
-      if (d < 8) { s += 0.35; break; }
-      if (d < 15) { s += 0.15; break; }
+      if (d < 8) { s += 0.35; riverBonusDone = true; break; }
+      if (d < 15) { s += 0.15; riverBonusDone = true; break; }
     }
+    if (riverBonusDone) break;
   }
   const rostovDist = distanceKm(lat, lon, 47.23, 39.72);
   if (rostovDist < 25) s -= 0.3;
@@ -59,14 +62,19 @@ function pointSegDistKm(
   [aLat, aLon]: [number, number],
   [bLat, bLon]: [number, number],
 ): number {
-  const A = [aLat, aLon];
-  const B = [bLat, bLon];
-  const P = [lat, lon];
+  // локальная проекция: lon сжимаем на cos(lat) — иначе 1° E-W (~76 км на 47°)
+  // приравнен к 1° N-S (111 км) и пороги «8/15 км» искажаются по долготе
+  const k = Math.cos((Math.PI / 180) * ((lat + aLat + bLat) / 3));
+  const A = [aLat, aLon * k];
+  const B = [bLat, bLon * k];
+  const P = [lat, lon * k];
   const abx = B[0] - A[0];
   const aby = B[1] - A[1];
   const len2 = abx * abx + aby * aby;
   const t = Math.max(0, Math.min(1, ((P[0] - A[0]) * abx + (P[1] - A[1]) * aby) / len2));
-  return distanceKm(lat, lon, A[0] + abx * t, A[1] + aby * t);
+  const projLat = A[0] + abx * t;
+  const projLon = (A[1] + aby * t) / k;
+  return distanceKm(lat, lon, projLat, projLon);
 }
 
 const corridorCache = new Map<string, AsfCell[]>();

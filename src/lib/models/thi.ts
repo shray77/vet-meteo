@@ -1,7 +1,8 @@
 /**
  * THI — индекс теплового стресса (Temperature-Humidity Index), КРС.
  * THI = (1.8·T + 32) − (0.55 − 0.0055·RH)·(1.8·T − 26)
- * (NRC—Yousef; классификация Armstrong 1994).
+ * (NRC—Yousef; пороги 68/72/80/90 — по extension-гайдам:
+ * Armstrong 1994 + UC Davis, у самого Armstrong — 72/78/89).
  *
  * Ревизия 2026-09-07 (сверка с первоисточниками):
  *  — потери удоя: Ravagnolo & Misztal (2000, JDS 83:109) — ~0.2 кг/ед. THI>72

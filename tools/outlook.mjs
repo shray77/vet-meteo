@@ -93,8 +93,8 @@ if (Array.isArray(om) && om.length === STATIONS.stations.length) {
   });
 }
 
-/* вчерашний снапшот: доля часов THI>72 */
-const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+/* вчерашний снапшот: доля часов THI>72 (даты снапшотов — МСК, как и весь конвейер) */
+const yesterday = new Date(Date.now() - 86_400_000 + 3 * 3600e3).toISOString().slice(0, 10);
 const yFile = join(ROOT, 'data', 'snapshots', `${yesterday}.json`);
 let yesterdaySummary = null;
 if (existsSync(yFile)) {

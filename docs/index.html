@@ -467,7 +467,7 @@ async function loadAll(){
   ]);
   S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast; S.verify=verify||S.verify;
   const days=[]; const now=new Date();
-  for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5)));
+  for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5+3*3600e3))); // даты снапшотов — МСК
   const snaps=await Promise.all(days.map(dd=>jget(RAW+'/snapshots/'+dd+'.json').catch(()=>null)));
   S.snaps=snaps.filter(Boolean);
   if(!S.latest){

@@ -34,7 +34,7 @@ export default function InfoDialog() {
               <p className="text-[#b8bca8]">
                 Птица: 0.6·Tdb + 0.4·Twb (Twb — Stull 2011). Свиноматки: NRC-THI, пороги 72/78/84.
                 WCI = (10.45 + 10√v − v)·(33 − T) — холод КРС. HLI = THI + 0.35·(TG−Tdb) − 1.4·WS
-                (TG = Tdb + 0.016·SWR, по мотивам Gaughan, Mader 2008); AHL копит HLI&gt;77 с
+                (TG = Tdb + 0.016·SWR, по мотивам Gaughan, Mader 2008); AHL копит HLI&gt;78 с
                 распадом 2%/ч.
               </p>
             </section>

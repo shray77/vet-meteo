@@ -15,8 +15,9 @@ const snapDir = join(ROOT, 'data', 'snapshots');
 
 const names = Object.fromEntries(STATIONS.stations.map((s) => [s.id, s.name]));
 const days = [];
+// даты снапшотов — по МСК (+3 ч), как их пишут fetch_stations/cf-slice
 for (let i = 0; i < 7; i++) {
-  const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+  const d = new Date(Date.now() - i * 86_400_000 + 3 * 3600e3).toISOString().slice(0, 10);
   const f = join(snapDir, `${d}.json`);
   if (existsSync(f)) {
     try { days.push({ date: d, snap: JSON.parse(readFileSync(f, 'utf8')) }); } catch { /* битый — пропускаем */ }

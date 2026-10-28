@@ -45,18 +45,36 @@ jobs:
             echo "Telegram не настроен (секреты TG_BOT_TOKEN/TG_CHAT_ID) — пропускаем"
             exit 0
           fi
+          # честный send как в tools/alerts.mjs: await + 3 попытки с паузами 3/6/9 с
+          # (было fire-and-forget .then(log): без ретраев, отказ не влиял на лог шага)
           node -e '
             const o = require("./data/outlook.json");
+            const TOKEN = process.env.TG_BOT_TOKEN;
+            const CHAT = process.env.TG_CHAT_ID;
             const msk = new Date(o.generatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour12: false });
             const lines = ["\u{1F4C5} <b>ВЕТРАДАР-61 \u00b7 суточный дайджест</b> \u00b7 " + msk + " МСК", ""];
             if (o.digest && o.digest.length) { lines.push("<b>Фокусы 7 дней:</b>"); for (const d of o.digest) lines.push("\u2022 " + d); }
             else lines.push("превышений THI 72/80 за 7 дней не прогнозируется");
             const top = (o.stations || []).slice().sort((a, b) => b.thiMax7 - a.thiMax7)[0];
             if (top) lines.push("", "Пик жары: " + top.name + " \u2014 THImax " + top.thiMax7);
-            fetch(`https://api.telegram.org/bot${process.env.TG_BOT_TOKEN}/sendMessage`, {
-              method: "POST", headers: { "content-type": "application/json" },
-              body: JSON.stringify({ chat_id: process.env.TG_CHAT_ID, text: lines.join("\n"), parse_mode: "HTML", disable_web_page_preview: true }),
-            }).then(r => console.log("TG:", r.ok ? "отправлено" : "HTTP " + r.status));
+            async function send(text) {
+              for (let i = 0; i < 3; i++) {
+                try {
+                  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                    method: "POST", headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT, text, parse_mode: "HTML", disable_web_page_preview: true }),
+                  });
+                  if (r.ok) { console.log("TG: отправлено (попытка " + (i + 1) + ")"); return true; }
+                  console.error("TG HTTP", r.status, await r.text());
+                } catch (e) { console.error("TG try", i + 1, e.message); }
+                await new Promise((res) => setTimeout(res, 3000 * (i + 1)));
+              }
+              return false;
+            }
+            (async () => {
+              const ok = await send(lines.join("\n"));
+              if (!ok) console.error("TG: НЕ удалось отправить дайджест за 3 попытки");
+            })();
           '
 
       - name: Коммит

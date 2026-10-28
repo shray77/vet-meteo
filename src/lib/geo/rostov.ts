@@ -8,7 +8,9 @@
 
 import demData from './dem.json';
 
-export const RO_BBOX = { minLat: 46.6, maxLat: 49.5, minLon: 37.5, maxLon: 43.8 };
+// maxLat 49.9: станции Вёшенская (49.62) и Казанская (49.67) выше старой границы 49.5 —
+// иначе АЧС-коридор не доходил до Верхнедонского района; bbox как в tools/osint_cli.py.
+export const RO_BBOX = { minLat: 46.6, maxLat: 49.9, minLon: 37.5, maxLon: 43.8 };
 
 export interface RiverLine {
   name: string;

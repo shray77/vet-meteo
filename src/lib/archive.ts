@@ -38,8 +38,8 @@ async function fetchHistory(): Promise<{ history: Record<string, ArchiveRow[]>; 
   const days: string[] = [];
   const now = new Date();
   const jobs: Promise<void>[] = [];
-  for (let d = 0; d <= 3; d++) { // сегодня + 3 дня назад
-    const day = new Date(now.getTime() - d * 86_400_000).toISOString().slice(0, 10);
+  for (let d = 0; d <= 3; d++) { // сегодня + 3 дня назад; даты снапшотов — по МСК
+    const day = new Date(now.getTime() - d * 86_400_000 + 3 * 3600e3).toISOString().slice(0, 10);
     days.push(day);
     jobs.push(
       (async () => {
