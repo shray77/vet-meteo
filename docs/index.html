@@ -5,62 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ВЕТРАДАР-61 · Пост диспетчера</title>
 <meta name="description" content="Диспетчерский дашборд: метеостанции Ростовской области, THI КРС, BRD телят, прогноз 7 дней. Данные обновляет GitHub Actions ежечасно.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0d08' stroke='%23f0c674' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%237fbf6f'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23f0c674'/%3E%3Cline x1='16' y1='16' x2='27' y2='7' stroke='%23f0c674' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23FAF9F5' stroke='%23C73E1D' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%2347753A'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23C73E1D'/%3E%3Cline x1='16' y1='16' x2='27' y2='7' stroke='%23C73E1D' stroke-width='1.5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="./vet-ds.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script>/* Task 196: тема из localStorage до первой отрисовки — канон сестёр */
+(function(){try{if(localStorage.getItem("vetds-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}})();</script>
 <style>
 :root{
-  color-scheme: dark;
-  /* Ядро — vet-ds (./vet-ds.css). Характер ВетРадара — оливковый терминал:
-     полный оверрайд поверхностей/текстов/статусов, потребление через --ds-*. */
-  --ds-bg:#0b0d08; --ds-surface:#10130a; --ds-surface2:#151910;
-  --ds-border:#262b1d;
-  --ds-text:#d8dcc8; --ds-muted:#8a8f78; --ds-faint:#818c7c;
-  --ds-accent:#f0c674; --ds-accent-strong:#e6b865; --ds-accent-ink:#1a1408;
-  --ds-green:#7fbf6f; --ds-red:#d96060; --ds-orange:#e8956d; --ds-amber:#f0c674; --ds-blue:#a8c8f0;
-  --ds-font-mono:ui-monospace,"JetBrains Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
-  /* локальные алиасы */
+  color-scheme: light;
+  /* Task 196: ядро vet-ds «Научная периодика» — как у сестёр (ветхаб/ФЭКРТ/
+     веттулс): оливковый терминал retiring, оверрайда палитры ядра больше нет —
+     светлая бумага по умолчанию, тёмная «Вечерний номер» через [data-theme].
+     Ниже — локальные алиасы унаследованной вёрстки; характер витрины —
+     дефолтная терракота. Зоны THI/CCI — data-viz, theme-aware. */
   --bg:var(--ds-bg); --panel:var(--ds-surface); --panel2:var(--ds-surface2);
-  --border2:var(--ds-border);
+  --panel3:var(--ds-surface2);
+  --border2:var(--ds-border); --border:var(--ds-border);
   --text:var(--ds-text); --muted:var(--ds-muted); --dim:var(--ds-faint);
-  --accent:var(--ds-accent); --green:var(--ds-green); --red:var(--ds-red); --orange:var(--ds-orange);
-  /* характер: третья элевация и яркая рамка */
-  --panel3:#1a1f12; --border:#3a4030;
-  /* зоны THI — data-viz, ДС не подчиняются */
-  --z1bg:#1d3a1d; --z1fg:#7fbf6f; --z2bg:#33300f; --z2fg:#f0c674;
-  --z3bg:#3a2412; --z3fg:#e8956d; --z4bg:#3a1414; --z4fg:#e07070;
+  --accent:var(--ds-accent); --green:var(--ds-green); --red:var(--ds-red);
+  --mono:var(--ds-font-mono);
+  --accent-dim:color-mix(in srgb, var(--accent) 12%, transparent);
+  /* зоны THI — data-viz: на свету тинты + тёмные чернила (AA), в тёмной —
+     тёмные тинты + яркие статусы ядра */
+  --z1bg:#E4EEE0; --z1fg:#3E6B33;
+  --z2bg:#F2E8D2; --z2fg:#7C5210;
+  --z3bg:#F6E2D4; --z3fg:#A34A18;
+  --z4bg:#F5DFDB; --z4fg:#A92118;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --z1bg:#243020; --z1fg:#8DB96F;
+  --z2bg:#332C14; --z2fg:#D9A24A;
+  --z3bg:#3A2412; --z3fg:#E08A4F;
+  --z4bg:#3A1414; --z4fg:#E87963;
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 *{box-sizing:border-box;margin:0;padding:0}
-html{color-scheme:dark}
 body{
   background:var(--bg); color:var(--text);
-  font-family:var(--ds-font-mono);
-  font-size:13px; line-height:1.45; padding-bottom:40px;
-  background-image:repeating-linear-gradient(0deg,transparent 0 2px,color-mix(in srgb, var(--accent) 1.2%, transparent) 2px 4px);
+  font:15px/1.55 var(--ds-font-sans);
+  padding-bottom:40px;
 }
-a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
-.wrap{max-width:1480px;margin:0 auto;padding:10px 14px}
+a{color:var(--ds-blue);text-decoration:none} a:hover{text-decoration:underline}
+.wrap{max-width:1480px;margin:0 auto;padding:12px 16px}
 
 /* ── header ─────────────────────────── */
 header{
-  position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--panel) 94%, transparent);backdrop-filter:blur(3px);
+  position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--panel) 92%, transparent);backdrop-filter:blur(6px);
   border-bottom:1px solid var(--border);
 }
-.h-in{max-width:1480px;margin:0 auto;padding:8px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
-.logo{display:flex;align-items:center;gap:9px}
-.logo svg{flex:none}
-.logo b{font-size:15px;letter-spacing:.22em;color:var(--accent);font-weight:700}
-.logo small{display:block;font-size:10px;color:var(--muted);letter-spacing:.08em}
+.h-in{max-width:1480px;margin:0 auto;padding:9px 16px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo .mark{width:38px;height:38px;border-radius:10px;background:var(--accent-dim);border:1px solid color-mix(in srgb, var(--accent) 32%, transparent);display:grid;place-items:center;color:var(--accent);flex:none}
+.logo b{display:block;font-family:var(--ds-font-display);font-weight:400;font-size:21px;line-height:1.12;color:var(--text)}
+.logo small{display:block;font-size:11.5px;color:var(--dim);margin-top:1px}
 .h-badges{display:flex;flex-wrap:wrap;gap:6px}
-.badge{font-size:10px;letter-spacing:.08em;padding:2px 8px;border:1px solid var(--border2);border-radius:2px;background:var(--panel3);color:var(--muted);white-space:nowrap}
-.badge.ok{background:var(--z1bg);color:var(--z1fg);border-color:#2a4a26}
-.badge.warn{background:var(--z3bg);color:var(--z3fg)}
-.badge.bad{background:var(--z4bg);color:var(--z4fg)}
+.badge{font:500 10.5px/1.5 var(--mono);letter-spacing:.01em;padding:3px 10px;border:1px solid var(--border2);border-radius:999px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+.badge.ok{background:var(--z1bg);color:var(--z1fg);border-color:color-mix(in srgb,var(--z1fg) 28%,transparent)}
+.badge.warn{background:var(--z3bg);color:var(--z3fg);border-color:color-mix(in srgb,var(--z3fg) 28%,transparent)}
+.badge.bad{background:var(--z4bg);color:var(--z4fg);border-color:color-mix(in srgb,var(--z4fg) 28%,transparent)}
 .h-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#updated{font-size:10px;color:var(--muted);letter-spacing:.05em}
-.btn{font:inherit;font-size:10px;letter-spacing:.1em;color:var(--accent);background:var(--panel3);border:1px solid var(--border);border-radius:2px;padding:4px 10px;cursor:pointer}
-.btn:hover{background:var(--panel2);border-color:var(--accent)}
+#updated{font:500 11px var(--mono);color:var(--muted)}
+.theme-pill{min-height:34px;padding:0 13px;font:500 12px var(--ds-font-mono)}
+.theme-pill svg{color:var(--accent)}
+.btn{font:600 12.5px/1.2 var(--ds-font-sans);color:var(--text);background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:7px 13px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
 .btn:disabled{opacity:.45;cursor:wait}
 
 /* ── мобильная компакция хедера/тулбара (Task 167) ──
@@ -69,9 +81,9 @@ header{
    скроллящимся рядом (~64px). Десктоп >620px не тронут. */
 @media(max-width:620px){
   .h-in{display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 8px;padding:6px 10px}
-  .logo{grid-area:1/1/2/2;min-width:0;gap:7px}
-  .logo svg{width:22px;height:22px}
-  .logo b{font-size:12.5px}
+  .logo{grid-area:1/1/2/2;min-width:0;gap:9px}
+  .logo .mark{width:30px;height:30px;border-radius:8px}
+  .logo b{font-size:17px}
   .logo small{display:none}
   .h-right{grid-area:1/2/2/3;margin-left:0;gap:6px;flex-wrap:nowrap}
   #updated{display:none}
@@ -89,72 +101,71 @@ header{
 }
 
 /* ── error banner ───────────────────── */
-#errBanner{display:none;margin:10px 0 0;border:1px solid var(--z4bg);background:var(--z4bg);color:var(--z4fg);padding:7px 12px;border-radius:2px;font-size:11px;letter-spacing:.04em}
+#errBanner{display:none;margin:12px 0 0;border:1px solid color-mix(in srgb,var(--z4fg) 35%,transparent);background:var(--z4bg);color:var(--z4fg);padding:9px 14px;border-radius:var(--ds-radius);font-size:13px;letter-spacing:.02em}
 
 /* ── KPI ────────────────────────────── */
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:14px}
 @media(max-width:1150px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--panel);border:1px solid var(--border2);border-radius:3px;padding:9px 11px 8px;position:relative;overflow:hidden}
-.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--border);opacity:.6}
-.kpi .k-l{font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
-.kpi .k-v{font-size:22px;font-weight:700;letter-spacing:.02em;line-height:1.1}
-.kpi .k-s{font-size:10px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi{background:var(--panel);border:1px solid var(--border2);border-radius:var(--ds-radius);padding:11px 13px 10px}
+.kpi .k-l{font-size:10px;font-weight:600;letter-spacing:.09em;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+.kpi .k-v{font:600 23px/1.15 var(--mono);letter-spacing:-.01em}
+.kpi .k-s{font-size:11px;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi.hot .k-v{color:var(--z3fg)} .kpi.crit .k-v{color:var(--z4fg)} .kpi.good .k-v{color:var(--z1fg)} .kpi.neut .k-v{color:var(--accent)}
 
 /* ── panels ─────────────────────────── */
-.panel{background:var(--panel);border:1px solid var(--border2);border-radius:3px;margin-top:12px;overflow:hidden}
-.p-h{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border2);background:var(--panel2)}
-.p-h b{font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:700}
-.p-h span{font-size:10px;color:var(--dim);letter-spacing:.06em}
-.p-h .right{margin-left:auto;font-size:10px;color:var(--muted)}
-.p-b{padding:10px 12px}
+.panel{background:var(--panel);border:1px solid var(--border2);border-radius:var(--ds-radius);margin-top:14px;overflow:hidden}
+.p-h{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border2);background:var(--panel2)}
+.p-h b{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:700;text-transform:uppercase}
+.p-h span{font-size:11.5px;color:var(--dim)}
+.p-h .right{margin-left:auto;font:500 11px var(--mono);color:var(--muted)}
+.p-b{padding:12px 16px}
 
-.grid-b{display:grid;grid-template-columns:400px 1fr;gap:12px;margin-top:12px;align-items:start}
+.grid-b{display:grid;grid-template-columns:400px 1fr;gap:14px;margin-top:14px;align-items:start}
 @media(max-width:1020px){.grid-b{grid-template-columns:1fr}}
-.grid-d{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.grid-d{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 @media(max-width:1020px){.grid-d{grid-template-columns:1fr}}
 
 /* ── map ────────────────────────────── */
 #mapSvg{display:block;width:100%;height:auto}
-.map-cap{font-size:10px;color:var(--dim);padding:6px 12px 9px;letter-spacing:.06em}
+.map-cap{font-size:11.5px;color:var(--dim);padding:7px 16px 10px}
 
 /* ── table ──────────────────────────── */
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10.5px;font-weight:600;letter-spacing:.05em;color:var(--dim);text-transform:uppercase;text-align:right;padding:8px 10px;border-bottom:1px solid var(--border2);white-space:nowrap;user-select:none}
 th:first-child,td:first-child{text-align:left}
 th.sortable{cursor:pointer} th.sortable:hover{color:var(--accent)}
 th .arr{color:var(--accent)}
-td{padding:5px 8px;border-bottom:1px solid var(--border2);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td{padding:6px 10px;border-bottom:1px solid var(--border2);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 tr:hover td{background:color-mix(in srgb, var(--accent) 4%, transparent)}
-.st-name{color:var(--text)} .st-id{color:var(--dim);font-size:10px;margin-left:6px}
-.chip{display:inline-block;min-width:52px;text-align:center;padding:1px 7px;border-radius:2px;font-weight:700;font-size:12px}
+.st-name{font-weight:600} .st-id{color:var(--dim);font:500 10.5px var(--mono);margin-left:7px}
+.chip{display:inline-block;min-width:52px;text-align:center;padding:2px 8px;border-radius:6px;font:700 12px var(--mono)}
 .chip.z1{background:var(--z1bg);color:var(--z1fg)} .chip.z2{background:var(--z2bg);color:var(--z2fg)}
 .chip.z3{background:var(--z3bg);color:var(--z3fg)} .chip.z4{background:var(--z4bg);color:var(--z4fg)}
-.small-dim{color:var(--muted);font-size:11px}
+.small-dim{color:var(--muted);font-size:11.5px}
 .spark{display:inline-block;vertical-align:middle}
-.legend{display:flex;flex-wrap:wrap;gap:14px;padding:8px 12px;border-top:1px solid var(--border2);font-size:10px;color:var(--muted)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:1px;margin-right:5px;vertical-align:-1px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:9px 16px 11px;border-top:1px solid var(--border2);font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 
 /* ── heat grid ──────────────────────── */
 .heat-wrap{overflow-x:auto}
-#heatTable td{padding:4px 6px}
-.hday{font-size:10px;color:var(--dim);text-align:center;min-width:52px}
-.hval{font-size:11px;text-align:center;border-radius:2px;min-width:52px;padding:3px 0}
-.days-col{font-size:11px;text-align:center;font-weight:700}
+#heatTable td{padding:5px 7px}
+.hday{font-size:10.5px;color:var(--dim);text-align:center;min-width:52px}
+.hval{font:500 12px var(--mono);text-align:center;border-radius:6px;min-width:52px;padding:3px 0}
+.days-col{font-size:12.5px;text-align:center;font-weight:700}
 
 /* ── metar / digest ─────────────────── */
-.metar-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--border2);font-size:12px}
+.metar-row{display:flex;gap:10px;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid var(--border2);font-size:13px}
 .metar-row:last-child{border-bottom:0}
-.m-icao{color:var(--accent);font-weight:700;min-width:58px}
-.digest-line{padding:3px 0 3px 14px;position:relative;color:var(--text);font-size:12px;border-bottom:1px solid var(--border2)}
+.m-icao{color:var(--accent);font:600 12.5px var(--mono);min-width:58px;padding-top:1px}
+.digest-line{padding:4px 0 4px 15px;position:relative;color:var(--text);font-size:13px;border-bottom:1px solid var(--border2)}
 .digest-line:last-child{border-bottom:0}
 .digest-line::before{content:">";position:absolute;left:0;color:var(--dim)}
-.source-tag{font-size:9px;color:var(--dim);letter-spacing:.08em}
+.source-tag{font:500 10px var(--mono);color:var(--dim);letter-spacing:.03em}
 
 /* ── footer ─────────────────────────── */
-footer{margin-top:16px;border-top:1px solid var(--border2);padding-top:10px;font-size:10px;color:var(--dim);letter-spacing:.05em;line-height:1.8}
+footer{margin-top:18px;border-top:1px solid var(--border2);padding-top:12px;font-size:12px;color:var(--dim);line-height:1.7}
 footer b{color:var(--muted)}
 /* Task 195: подвал свёрнут — стена текста (источники/индексы/дисклеймер)
    по желанию; легал-строка видна всегда */
@@ -170,19 +181,20 @@ footer .flegal{margin-top:6px}
 /* ── leaflet-карта ─────────────────────── */
 #lfmap{height:430px;background:var(--panel)}
 #lfmap.leaflet-container{background:var(--panel);font-family:inherit}
-.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel2);color:var(--text);border:1px solid var(--border);box-shadow:none;border-radius:2px}
-.leaflet-popup-content{margin:8px 11px;font-family:inherit;font-size:12px;line-height:1.55}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border:1px solid var(--border2);border-radius:8px;box-shadow:0 4px 18px color-mix(in srgb,var(--ds-text) 12%,transparent)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--border2);box-shadow:none}
+.leaflet-popup-content{margin:9px 13px;font-family:inherit;font-size:12.5px;line-height:1.55}
 .leaflet-popup-content b{color:var(--accent)}
 .leaflet-popup-close-button{color:var(--muted)!important}
-.leaflet-control-layers{background:var(--panel2)!important;color:var(--muted);border:1px solid var(--border)!important;border-radius:2px!important}
-.leaflet-control-layers-expanded{padding:6px 10px;font-size:11px;letter-spacing:.05em}
-.leaflet-control-layers-expanded label{margin:2px 0}
-.leaflet-control-attribution{background:color-mix(in srgb, var(--panel) 88%, transparent)!important;color:var(--dim);font-size:9px}
+.leaflet-control-layers{background:var(--panel)!important;color:var(--muted);border:1px solid var(--border2)!important;border-radius:8px!important}
+.leaflet-control-layers-expanded{padding:7px 11px;font-size:11.5px}
+.leaflet-control-layers-expanded label{margin:3px 0}
+.leaflet-control-attribution{background:color-mix(in srgb, var(--panel) 88%, transparent)!important;color:var(--dim);font-size:10px}
 .leaflet-attribution-flag{display:none!important}
 .leaflet-control-attribution a{color:var(--muted)}
-.leaflet-bar a{background:var(--panel2)!important;color:var(--accent)!important;border-color:var(--border)!important}
-.leaflet-bar a:hover{background:var(--panel3)!important}
-.lf-tip{background:var(--panel3)!important;border:1px solid var(--border)!important;color:var(--text)!important;font-size:10px;letter-spacing:.06em;box-shadow:none;border-radius:2px;padding:2px 7px}
+.leaflet-bar a{background:var(--panel)!important;color:var(--accent)!important;border-color:var(--border2)!important}
+.leaflet-bar a:hover{background:var(--panel2)!important}
+.lf-tip{background:var(--panel)!important;border:1px solid var(--border2)!important;color:var(--text)!important;font:500 11px var(--mono);box-shadow:0 2px 10px color-mix(in srgb,var(--ds-text) 10%,transparent);border-radius:6px;padding:2px 8px}
 .lf-tip::before{display:none}
 /* Task 195: слой вспышек вырезан — вспышки болезней живут на ВетКарте,
    ВетРадар — про погоду и стрессы скота; упоминание — ссылкой в подписи карты */
@@ -190,11 +202,11 @@ footer .flegal{margin-top:6px}
 /* ── экономика теплового стресса ── */
 #milkPanel summary{cursor:pointer;list-style:none}
 #milkPanel summary::-webkit-details-marker{display:none}
-#milkPanel summary:hover .p-h{background:var(--panel3)}
-#milkPanel.stress{border-color:var(--z3fg)}
-#milkPeek{color:var(--orange);font-weight:700;white-space:nowrap;font-size:11px;letter-spacing:.02em}
-.milk-in{background:var(--panel2);border:1px solid var(--border);border-radius:3px;color:var(--text);font:inherit;padding:4px 8px;width:90px;text-align:center}
-.milk-in:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+#milkPanel summary:hover .p-h{background:color-mix(in srgb,var(--ds-text) 3%,var(--panel2))}
+#milkPanel.stress{border-color:color-mix(in srgb,var(--z3fg) 45%,transparent)}
+#milkPeek{color:var(--z3fg);font:600 11.5px var(--mono);white-space:nowrap}
+.milk-in{background:var(--panel);border:1px solid var(--border2);border-radius:8px;color:var(--text);font:inherit;padding:5px 9px;width:90px;text-align:center}
+.milk-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 
 /* ── история THI ───────────────────── */
 /* Task 195: канвасы — битмап под плотность экрана, ширина = ширина панели
@@ -202,48 +214,49 @@ footer .flegal{margin-top:6px}
    узкому экрану — горизонтальный скролл при мин. ширине (см. .cv-wrap) */
 .cv-wrap{overflow-x:auto}
 #histCanvas{width:100%;min-width:560px;height:180px;display:block}
-.hist-select{font:inherit;font-size:11px;background:var(--panel3);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:2px 6px;letter-spacing:.04em;cursor:pointer}
+.hist-select{font:500 12px var(--ds-font-sans);background:var(--panel);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:4px 9px;cursor:pointer}
+.hist-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 
 /* ── прогноз 48 ч ───────────────── */
 #fcCanvas{width:100%;min-width:560px;height:200px;display:block}
-.fc-win{padding:3px 0 3px 14px;position:relative;font-size:12px;border-bottom:1px solid var(--border2)}
+.fc-win{padding:4px 0 4px 15px;position:relative;font-size:13px;border-bottom:1px solid var(--border2)}
 .fc-win:last-child{border-bottom:0}
 .fc-win::before{content:"■";position:absolute;left:0;font-size:8px;top:5px}
 .fc-win.l3::before{color:var(--z3fg)} .fc-win.l4::before{color:var(--z4fg)}
 .fc-win .fc-peak{color:var(--accent);font-weight:700}
 
 /* ── тайм-машина карты ──────────────── */
-.tm-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--border2);background:var(--panel2)}
-.tm-label{font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
-.tm-note{font-size:10px;color:var(--muted);margin-left:4px}
-.btn.tm{padding:3px 9px}
-.btn.tm.on{background:var(--z1bg);color:var(--z1fg);border-color:#2a4a26}
+.tm-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--border2);background:var(--panel2)}
+.tm-label{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.tm-note{font-size:11px;color:var(--muted);margin-left:4px}
+.btn.tm{padding:5px 11px;font-size:12px}
+.btn.tm.on{background:var(--z1bg);color:var(--z1fg);border-color:color-mix(in srgb,var(--z1fg) 35%,transparent)}
 
 /* ── проверка прогноза (ретроспектива) ── */
-#fcHelp{padding:5px 12px 7px;font-size:11px;color:var(--muted);line-height:1.55;border-bottom:1px solid var(--border2)}
+#fcHelp{padding:7px 16px 9px;font-size:12px;color:var(--muted);line-height:1.55;border-bottom:1px solid var(--border2)}
 #fcHelp b{color:var(--text);font-weight:700}
-.v-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.v-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media(max-width:900px){.v-grid{grid-template-columns:repeat(2,1fr)}}
-.v-cell{background:var(--panel3);border:1px solid var(--border2);border-radius:3px;padding:7px 9px 6px}
-.v-cell .k-l{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
-.v-cell .k-v{font-size:17px;font-weight:700;letter-spacing:.02em}
-.v-cell .k-s{font-size:10px;color:var(--muted);margin-top:2px}
-.v-sec{display:flex;gap:10px;align-items:baseline;font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin:12px 0 6px;flex-wrap:wrap}
-.v-sec b{color:var(--accent);font-size:11px;letter-spacing:.16em}
-.v-sec .right{margin-left:auto;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:.04em}
-.v-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.v-cell{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:9px 11px 8px}
+.v-cell .k-l{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
+.v-cell .k-v{font:600 18px/1.2 var(--mono)}
+.v-cell .k-s{font-size:11px;color:var(--muted);margin-top:3px}
+.v-sec{display:flex;gap:10px;align-items:baseline;font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin:14px 0 7px;flex-wrap:wrap}
+.v-sec b{color:var(--accent);font-size:11.5px;letter-spacing:.1em}
+.v-sec .right{margin-left:auto;font:500 11px var(--mono);color:var(--muted);text-transform:none}
+.v-note{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}
 /* Task 195: ретро-таблицы катаются — v-th с nowrap не расползает панель на телефоне */
 #vBody{overflow-x:auto}
-.v-th{width:100%;border-collapse:collapse;font-size:12px}
-.v-th th{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.v-th{width:100%;border-collapse:collapse;font-size:13px}
+.v-th th{font-size:10.5px;font-weight:600;letter-spacing:.05em;color:var(--dim);text-transform:uppercase;text-align:right;padding:6px 10px;border-bottom:1px solid var(--border2);white-space:nowrap}
 .v-th th:first-child,.v-th td:first-child{text-align:left}
-.v-th td{padding:4px 8px;border-bottom:1px solid var(--border2);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.v-verdict{margin-top:12px;padding:8px 11px;border:1px solid var(--border2);border-radius:3px;background:var(--panel2);font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.v-tag{font-weight:700;padding:1px 8px;border-radius:2px;white-space:nowrap}
+.v-th td{padding:5px 10px;border-bottom:1px solid var(--border2);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.v-verdict{margin-top:14px;padding:10px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--panel2);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.v-tag{font-weight:700;padding:2px 9px;border-radius:6px;white-space:nowrap}
 .v-tag.ok{background:var(--z1bg);color:var(--z1fg)} .v-tag.mid{background:var(--z2bg);color:var(--z2fg)} .v-tag.warn{background:var(--z3bg);color:var(--z3fg)} .v-tag.bad{background:var(--z4bg);color:var(--z4fg)}
 </style>
 <style>/* Task 182: хаб семьи — исходящие ссылки (сайт перестал быть тупиком) */
-.ds-hub { max-width: 1480px; margin: 0 auto; padding: 10px 14px 0; }</style>
+.ds-hub { max-width: 1480px; margin: 0 auto; padding: 12px 16px 0; }</style>
 </head>
 <body>
 
@@ -268,17 +281,17 @@ footer .flegal{margin-top:6px}
 <header>
   <div class="h-in">
     <div class="logo">
-      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="14" fill="#0b0d08" stroke="#f0c674" stroke-width="1.6"/>
-        <circle cx="16" cy="16" r="8.5" fill="none" stroke="#3a4030"/>
-        <circle cx="16" cy="16" r="4.5" fill="none" stroke="#7fbf6f" opacity=".7"/>
-        <circle cx="16" cy="16" r="2" fill="#f0c674"/>
-        <line x1="16" y1="16" x2="27" y2="6.5" stroke="#f0c674" stroke-width="1.4"/>
-        <line x1="16" y1="1.5" x2="16" y2="30.5" stroke="#3a4030" stroke-width=".5"/>
-        <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#3a4030" stroke-width=".5"/>
-      </svg>
+      <div class="mark"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="16" cy="16" r="8.5" stroke="var(--ds-border-strong)"/>
+        <circle cx="16" cy="16" r="4.5" stroke="var(--ds-green)" opacity=".75"/>
+        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+        <line x1="16" y1="16" x2="27" y2="6.5" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="16" y1="1.5" x2="16" y2="30.5" stroke="var(--ds-border-strong)" stroke-width=".6"/>
+        <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="var(--ds-border-strong)" stroke-width=".6"/>
+      </svg></div>
       <div>
-        <b>ВЕТРАДАР-61</b>
+        <b>ВетРадар-61</b>
         <small>пост диспетчера · метео · THI · Ростовская область</small>
       </div>
     </div>
@@ -291,8 +304,13 @@ footer .flegal{margin-top:6px}
     </div>
     <div class="h-right">
       <span id="updated">—</span>
-      <button class="btn" id="refreshBtn" onclick="loadAll(true)">ОБНОВИТЬ</button>
-      <a class="btn" href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">РЕПО ↗</a>
+      <button class="btn" id="refreshBtn" onclick="loadAll(true)">Обновить</button>
+      <a class="btn" href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">Репо ↗</a>
+      <button class="ds-btn ds-btn--sm ds-theme-toggle ds-theme-toggle--labeled theme-pill" id="themeToggle" aria-label="Переключить тему" title="Переключить тему">
+        <svg class="ds-theme-toggle__sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg>
+        <svg class="ds-theme-toggle__moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <span class="ds-theme-toggle__label" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
 </header>
@@ -374,7 +392,7 @@ footer .flegal{margin-top:6px}
     <div class="legend">
       <span><i style="background:var(--z3fg);height:2px;margin-bottom:3px"></i>THI прогноз</span>
       <span><i style="background:var(--accent);height:2px;margin-bottom:3px;opacity:.75"></i>THIadj (Mader)</span>
-      <span><i style="background:rgba(127,191,217,.5);height:6px"></i>осадки, мм/ч</span>
+      <span><i style="background:color-mix(in srgb, var(--ds-blue) 55%, transparent);height:6px;border-radius:2px"></i>осадки, мм/ч</span>
       <span>заливка — окна THI&gt;72 / &gt;80 · вертикаль — разделитель суток</span>
       <span style="margin-left:auto" id="fcMeta"></span>
     </div>
@@ -629,6 +647,16 @@ function setKPI(el,v,s,oldC,newC){
 
 /* Task 195: канвасы — битмап под плотность экрана (retina без замыливания) */
 const DPR=Math.min(2,window.devicePixelRatio||1);
+/* Task 196: палитра канвасов/маркеров ест токены АКТИВНОЙ темы (draw-время,
+   не кэш) — при тумблере свет/тьма перечитывается, графики перерисовываются */
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const PAL=()=>({
+  grid:cssv('--ds-border'),axis:cssv('--ds-faint'),muted:cssv('--ds-muted'),
+  text:cssv('--ds-text'),accent:cssv('--ds-accent'),blue:cssv('--ds-blue'),
+  surface:cssv('--ds-surface'),
+  z:[null,cssv('--z1fg'),cssv('--z2fg'),cssv('--z3fg'),cssv('--z4fg')]
+});
+const hexA=(h,a)=>{const m=/^#([0-9a-f]{6})$/i.exec((h||'').trim());if(!m)return h;const v=parseInt(m[1],16);return 'rgba('+(v>>16)+','+((v>>8)&255)+','+(v&255)+','+a+')';};
 function fitCv(cv){
   if(!cv)return;
   const w=Math.round((cv.clientWidth||600)*DPR),h=Math.round((cv.clientHeight||180)*DPR);
@@ -636,9 +664,13 @@ function fitCv(cv){
 }
 
 /* ── карта: Leaflet (фолбэк — SVG-схема) ── */
-const HEXZ=['#7fbf6f','#f0c674','#e8956d','#e07070'];
+/* Task 196: HEXZ оливкового терминала ушёл — заливки кругов и линии THI
+   берутся из PAL().z (зоны theme-aware), stroke маркера = surface темы */
 /* Task 195: слой вспышек вырезан — вспышки болезней живут на ВетКарте */
-const LF={map:null,st:null,fit:false};
+const LF={map:null,st:null,fit:false,base:null,basePicked:false,bases:null};
+/* Task 196: имя подложки по умолчанию для текущей темы (свет → OSM,
+   тьма → Esri Dark Gray); ручной выбор юзера главнее — см. baselayerchange */
+const themeBaseName=()=>document.documentElement.getAttribute('data-theme')==='dark'?'Тёмная (Esri)':'OSM';
 
 function ensureMap(){
   if(typeof L==='undefined'||!$('lfmap'))return false;
@@ -654,9 +686,15 @@ function ensureMap(){
       const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,subdomains:'abc',attribution:'&copy; <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a> (CC-BY-SA) · SRTM'});
       const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'});
       const sat=esri('World_Imagery','&copy; Esri · Maxar · Earthstar Geographics',18);
-      dark.addTo(LF.map);
+      LF.bases={'Тёмная (Esri)':dark,'Топо (OpenTopoMap)':topo,'OSM':osm,'Спутник (Esri)':sat};
+      LF.base=LF.bases[themeBaseName()];
+      LF.base.addTo(LF.map);
       LF.st=L.layerGroup().addTo(LF.map);
-      L.control.layers({'Тёмная (Esri)':dark,'Топо (OpenTopoMap)':topo,'OSM':osm,'Спутник (Esri)':sat},{'Станции · THI':LF.st},{collapsed:false}).addTo(LF.map);
+      const lc=L.control.layers(LF.bases,{'Станции · THI':LF.st},{collapsed:false}).addTo(LF.map);
+      /* Task 196: ручной выбор подложки фиксируем ТОЛЬКО реальным кликом юзера
+         (change на радио/чекбоксах контроля) — map-событие baselayerchange
+         финтит и на программные addTo, навсегда блокируя авто-смену темой */
+      if(lc&&lc.getContainer())lc.getContainer().addEventListener('change',()=>{LF.basePicked=true;});
       /* убираем фирменный флаг из префикса атрибуции Leaflet */
       if(LF.map.attributionControl)LF.map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
     }catch(e){LF.map=null;return false;}
@@ -678,6 +716,7 @@ function effStations(){
 function renderMap(){
   const Lv=S.latest;
   if(!Lv)return;
+  const P=PAL();
   const eff=effStations();
   const anyFc=eff.some(e=>e.fc);
   if(ensureMap()){
@@ -687,7 +726,7 @@ function renderMap(){
     for(const e of eff){
       const s=e.s,z=zone(e.thi);
       const rad=Math.max(6,Math.min(13,6+(e.thi-64)/3.2));
-      const m=L.circleMarker([s.lat,s.lon],{radius:rad,color:'#0b0d08',weight:1,fillColor:HEXZ[z-1],fillOpacity:.88});
+      const m=L.circleMarker([s.lat,s.lon],{radius:rad,color:P.surface,weight:1,fillColor:P.z[z],fillOpacity:.9});
       let pop;
       if(e.fc){
         const hh=addH(S.forecast.h0,e.k).slice(11,16);
@@ -742,7 +781,7 @@ function renderMapSvg(){
     const z=zone(s.thi),x=px(s.lon),y=py(s.lat);
     const isTop=top.find(t=>t.id===s.id);
     if(isTop)g+='<circle cx="'+x+'" cy="'+y+'" r="11" fill="none" stroke="'+ZFG[z]+'" stroke-width="1" opacity="0.5"/>';
-    g+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="'+ZFG[z]+'" opacity="0.9" stroke="#0b0d08" stroke-width="1"><title>'+s.name+' · T='+fmt(s.t)+'°C · THI='+fmt(s.thi)+' · BRD='+s.brd+'</title></circle>';
+    g+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="'+ZFG[z]+'" opacity="0.9" stroke="var(--ds-surface)" stroke-width="1"><title>'+s.name+' · T='+fmt(s.t)+'°C · THI='+fmt(s.thi)+' · BRD='+s.brd+'</title></circle>';
     if(isTop)g+='<text x="'+x+'" y="'+(y-10)+'" font-size="8" fill="var(--muted)" text-anchor="middle">'+s.name.toUpperCase()+'</text>';
   }
   g+='<text x="'+(W-PAD)+'" y="'+(PAD-12)+'" font-size="8" fill="var(--accent)" text-anchor="end">THI MAX '+fmt(Math.max(...st.map(s=>s.thi)))+'</text>';
@@ -867,12 +906,14 @@ function renderHist(){
   const id=sel.value;
   const series=id?histSeries(id):[];
   const ctx=cv.getContext('2d');
+  /* Task 196: C — палитра темы (P занят отступами канваса) */
+  const C=PAL();
   fitCv(cv);
   const W=cv.clientWidth||cv.width,H=cv.clientHeight||cv.height,P={l:36,r:12,t:10,b:20};
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
   if(series.length<2){
-    ctx.fillStyle='#8a8f78';ctx.font='12px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillStyle=C.muted;ctx.font='12px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='center';
     ctx.fillText('мало данных — архив копится ежечасно',W/2,H/2);
     $('histMeta').textContent='';$('histRight').textContent='архив '+S.snaps.length+' дн';
     return;
@@ -884,7 +925,7 @@ function renderHist(){
   const y=v=>P.t+(H-P.t-P.b)*(1-(v-mn)/(mx-mn));
   const x=i=>P.l+(W-P.l-P.r)*(i/(series.length-1));
   // сетка + ось Y
-  ctx.strokeStyle='#262b1d';ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
+  ctx.strokeStyle=C.grid;ctx.fillStyle=C.axis;ctx.font='10.5px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='right';
   for(let v=Math.ceil(mn);v<=mx;v+=Math.max(1,Math.round((mx-mn)/5))){
     ctx.beginPath();ctx.moveTo(P.l,y(v));ctx.lineTo(W-P.r,y(v));ctx.stroke();
     ctx.fillText(v,P.l-6,y(v)+3);
@@ -892,14 +933,14 @@ function renderHist(){
   // пороги 72/80
   ctx.setLineDash([4,4]);
   for(const thr of [72,80]) if(thr>mn&&thr<mx){
-    ctx.strokeStyle=thr===80?'rgba(224,112,112,.55)':'rgba(232,149,109,.5)';
+    ctx.strokeStyle=thr===80?hexA(C.z[4],.55):hexA(C.z[3],.5);
     ctx.beginPath();ctx.moveTo(P.l,y(thr));ctx.lineTo(W-P.r,y(thr));ctx.stroke();
-    ctx.fillStyle=thr===80?'#e07070':'#e8956d';ctx.textAlign='left';ctx.fillText(String(thr),W-P.r-18,y(thr)-3);
+    ctx.fillStyle=thr===80?C.z[4]:C.z[3];ctx.textAlign='left';ctx.fillText(String(thr),W-P.r-18,y(thr)-3);
   }
   ctx.setLineDash([]);
   // THIadj (пунктир)
   if(withAdj){
-    ctx.strokeStyle='rgba(240,198,116,.75)';ctx.lineWidth=1.2;ctx.setLineDash([2,3]);
+    ctx.strokeStyle=hexA(C.accent,.75);ctx.lineWidth=1.2;ctx.setLineDash([2,3]);
     ctx.beginPath();let started=false;
     for(let i=0;i<series.length;i++){
       const p=series[i];if(p.adj==null)continue;
@@ -908,14 +949,14 @@ function renderHist(){
     ctx.stroke();ctx.setLineDash([]);
   }
   // THI факт
-  ctx.strokeStyle=HEXZ[zone(vs[vs.length-1])-1];ctx.lineWidth=1.8;ctx.beginPath();
+  ctx.strokeStyle=C.z[zone(vs[vs.length-1])];ctx.lineWidth=1.8;ctx.beginPath();
   series.forEach((p,i)=>{i?ctx.lineTo(x(i),y(p.thi)):ctx.moveTo(x(i),y(p.thi));});
   ctx.stroke();
   // последняя точка
   const li=series.length-1;
-  ctx.fillStyle=HEXZ[zone(vs[li])-1];ctx.beginPath();ctx.arc(x(li),y(series[li].thi),3,0,7);ctx.fill();
+  ctx.fillStyle=C.z[zone(vs[li])];ctx.beginPath();ctx.arc(x(li),y(series[li].thi),3,0,7);ctx.fill();
   // ось X — время МСК (каждая ~6-я точка)
-  ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillStyle=C.axis;ctx.font='10.5px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='center';
   const step=Math.max(1,Math.round(series.length/8));
   for(let i=0;i<series.length;i+=step){
     const d=new Date(series[i].ts);
@@ -971,13 +1012,15 @@ function renderForecast(){
 }
 function drawFc(fc){
   const cv=$('fcCanvas'),ctx=cv.getContext('2d');
+  /* Task 196: C — палитра темы (P занят отступами канваса) */
+  const C=PAL();
   fitCv(cv);
   const W=cv.clientWidth||cv.width,H=cv.clientHeight||cv.height,P={l:38,r:14,t:12,b:22};
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
   const wl=$('fcWindows'),meta=$('fcMeta'),F=S.forecast;
   if(!fc||!(fc.thi||[]).length||!F||!F.h0){
-    ctx.fillStyle='#8a8f78';ctx.font='12px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillStyle=C.muted;ctx.font='12px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='center';
     ctx.fillText(F?'нет данных по станции':'прогноз появится после первого среза (data/forecast.json)',W/2,H/2);
     if(wl)wl.innerHTML='';
     if(meta)meta.textContent='';
@@ -996,13 +1039,13 @@ function drawFc(fc){
     if(thi[i]>72){
       let j=i;while(j<n&&thi[j]>72)j++;
       const deep=thi.slice(i,j).some(v=>v>80);
-      ctx.fillStyle=deep?'rgba(224,112,112,.14)':'rgba(232,149,109,.10)';
+      ctx.fillStyle=deep?hexA(C.z[4],.16):hexA(C.z[3],.12);
       ctx.fillRect(x(i),P.t,dx*(j-i)+1,H-P.t-P.b);
       i=j;
     }else i++;
   }
   /* сетка Y */
-  ctx.strokeStyle='#262b1d';ctx.fillStyle='#7a8070';ctx.font='10px ui-monospace,monospace';ctx.textAlign='right';
+  ctx.strokeStyle=C.grid;ctx.fillStyle=C.axis;ctx.font='10.5px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='right';
   const stepY=Math.max(1,Math.round((mx-mn)/5));
   for(let v=Math.ceil(mn);v<=mx;v+=stepY){
     ctx.beginPath();ctx.moveTo(P.l,y(v));ctx.lineTo(W-P.r,y(v));ctx.stroke();
@@ -1011,24 +1054,24 @@ function drawFc(fc){
   /* пороги 72/80 */
   ctx.setLineDash([4,4]);
   for(const thr of [72,80]) if(thr>mn&&thr<mx){
-    ctx.strokeStyle=thr===80?'rgba(224,112,112,.55)':'rgba(232,149,109,.5)';
+    ctx.strokeStyle=thr===80?hexA(C.z[4],.55):hexA(C.z[3],.5);
     ctx.beginPath();ctx.moveTo(P.l,y(thr));ctx.lineTo(W-P.r,y(thr));ctx.stroke();
-    ctx.fillStyle=thr===80?'#e07070':'#e8956d';ctx.textAlign='left';ctx.fillText(String(thr),W-P.r-16,y(thr)-3);
+    ctx.fillStyle=thr===80?C.z[4]:C.z[3];ctx.textAlign='left';ctx.fillText(String(thr),W-P.r-16,y(thr)-3);
   }
   ctx.setLineDash([]);
   /* разделители суток */
   for(let k=1;k<n;k++){
     const hs=addH(F.h0,k);
     if(hs.slice(11,13)==='00'){
-      ctx.strokeStyle='#3a4030';ctx.setLineDash([2,4]);
+      ctx.strokeStyle=hexA(C.muted,.5);ctx.setLineDash([2,4]);
       ctx.beginPath();ctx.moveTo(x(k),P.t);ctx.lineTo(x(k),H-P.b);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle='#8a8f78';ctx.font='9px ui-monospace,monospace';ctx.textAlign='center';
+      ctx.fillStyle=C.muted;ctx.font='9.5px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='center';
       ctx.fillText(dayLabel(hs.slice(0,10))+' '+WDshort(hs.slice(0,10)),x(k)+22,P.t+9);
     }
   }
   /* осадки — столбики */
   const prMax=Math.max(1,...pr.map(v=>v||0));
-  ctx.fillStyle='rgba(127,191,217,.5)';
+  ctx.fillStyle=hexA(C.blue,.55);
   for(let k=0;k<n;k++){
     const v=pr[k]||0;if(v<=0)continue;
     const hpx=Math.min(26,(v/prMax)*26);
@@ -1036,26 +1079,26 @@ function drawFc(fc){
   }
   /* THIadj (пунктир) */
   if(adj.length){
-    ctx.strokeStyle='rgba(240,198,116,.75)';ctx.lineWidth=1.2;ctx.setLineDash([2,3]);
+    ctx.strokeStyle=hexA(C.accent,.75);ctx.lineWidth=1.2;ctx.setLineDash([2,3]);
     ctx.beginPath();let started=false;
     for(let k=0;k<n;k++){const v=adj[k];if(v==null)continue;if(!started){ctx.moveTo(x(k),y(v));started=true;}else ctx.lineTo(x(k),y(v));}
     ctx.stroke();ctx.setLineDash([]);
   }
   /* THI прогноз */
-  ctx.strokeStyle=HEXZ[zone(thi[n-1])-1];ctx.lineWidth=1.8;ctx.beginPath();
+  ctx.strokeStyle=C.z[zone(thi[n-1])];ctx.lineWidth=1.8;ctx.beginPath();
   for(let k=0;k<n;k++){k?ctx.lineTo(x(k),y(thi[k])):ctx.moveTo(x(k),y(thi[k]));}
   ctx.stroke();
   /* пик */
   let pk=0;for(let k=0;k<n;k++)if(thi[k]>thi[pk])pk=k;
-  ctx.fillStyle=HEXZ[zone(thi[pk])-1];
+  ctx.fillStyle=C.z[zone(thi[pk])];
   ctx.beginPath();ctx.arc(x(pk),y(thi[pk]),3,0,7);ctx.fill();
-  ctx.fillStyle='#d8dcc8';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillStyle=C.text;ctx.font='10.5px "IBM Plex Mono",ui-monospace,monospace';ctx.textAlign='center';
   ctx.fillText(fmt(thi[pk]),x(pk),y(thi[pk])-7);
   /* маркер «сейчас» */
-  ctx.strokeStyle='rgba(216,220,200,.35)';ctx.beginPath();ctx.moveTo(x(0),P.t);ctx.lineTo(x(0),H-P.b);ctx.stroke();
-  ctx.fillStyle='#8a8f78';ctx.textAlign='left';ctx.fillText('сейчас',x(0)+4,P.t+9);
+  ctx.strokeStyle=hexA(C.text,.4);ctx.beginPath();ctx.moveTo(x(0),P.t);ctx.lineTo(x(0),H-P.b);ctx.stroke();
+  ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.fillText('сейчас',x(0)+4,P.t+9);
   /* X-метки */
-  ctx.fillStyle='#7a8070';ctx.textAlign='center';
+  ctx.fillStyle=C.axis;ctx.textAlign='center';
   for(let k=0;k<n;k+=6)ctx.fillText(addH(F.h0,k).slice(11,16),x(k),H-7);
   ctx.lineWidth=1;
   /* мета + окна стресса */
@@ -1188,6 +1231,25 @@ setInterval(loadFlu,30*60*1000);
 /* Task 195: канвасы перерисовываются под новую ширину окна/панели */
 let rszT=null;
 addEventListener('resize',()=>{clearTimeout(rszT);rszT=setTimeout(()=>{renderHist();renderForecast();},150);},{passive:true});
+
+/* Task 196: тумблер темы — канон сестёр (vetds-theme в localStorage);
+   после переключения канвасы и маркеры карты перерисовываются палитрой
+   новой темы, подложка по умолчанию следует за темой (если юзер не выбрал
+   свою — baselayerchange фиксирует ручной выбор) */
+(function(){
+  const root=document.documentElement,key='vetds-theme';
+  const btn=document.getElementById('themeToggle');
+  if(btn)btn.addEventListener('click',()=>{
+    const dark=root.getAttribute('data-theme')==='dark';
+    if(dark)root.removeAttribute('data-theme');else root.setAttribute('data-theme','dark');
+    try{localStorage.setItem(key,dark?'':'dark');}catch(e){}
+    renderHist();renderForecast();renderMap();
+    if(LF.map&&!LF.basePicked&&LF.bases){
+      const nb=LF.bases[themeBaseName()];
+      if(nb&&nb!==LF.base){LF.map.removeLayer(LF.base);nb.addTo(LF.map);LF.base=nb;}
+    }
+  });
+})();
 
 loadAll();
 setInterval(loadAll,5*60*1000);
