@@ -228,13 +228,14 @@ export default function RightPanel(props: {
               дата: {outbreak.date} · свиней: {outbreak.pigs} (ДЕМО-ДАННЫЕ)
             </div>
             <div className="mt-1 text-[#8a8f78]">
-              коридор волны: {corridor.length} клеток 0.1° · горизонт 20 ночей × 12 км/ночь
+              коридор волны: {corridor.length} клеток 0.1° · горизонт 20 мес × 2 км/мес
+              <br />(PMC7157679: локальный фронт АЧС 2–5 км/мес — консервативно; дальние прыжки антропогенные)
               <br />
-              быстрая зона ≤2 ночей: {corridor.filter((c) => c.days <= 2).length} клеток ·
-              ≤5 ночей: {corridor.filter((c) => c.days <= 5).length} клеток
+              ближайшая зона ≤2 мес: {corridor.filter((c) => c.months <= 2).length} клеток ·
+              ≤5 мес: {corridor.filter((c) => c.months <= 5).length} клеток
             </div>
             <div className="mt-1 text-[#8a8f78]">
-              официальные кольца: I 5 км карантин · II 20 км наблюдение · III 100 км контроль
+              официальные кольца: угрожаемая зона 5–20 км · зона наблюдения до 100 км (приказ МСХ № 37)
             </div>
           </div>
           <div className="rounded border border-[#3a4030] bg-[#14170f] p-2 font-mono text-[10px] leading-4 text-[#8a8f78]">

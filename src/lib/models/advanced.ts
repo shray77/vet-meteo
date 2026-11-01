@@ -42,13 +42,22 @@ export interface SpeciesThi {
   color: string;
 }
 
-/** Птица: THI = 0.6·Tdb + 0.4·Twb (индекс теплового стресса бройлеров/кур). */
+/**
+ * Птица: THI = 0.6·Tdb + 0.4·Twb — шкала Lallo et al. 2018 (подтверждена
+ * Poultry Science 2025, PMC12098143): comfort <27.8, moderate 27.8–28.8,
+ * severe 28.9–29.9, emergency ≥30.0.
+ * ФИКС 2026-11-01 (научный аудит SW-05): пороги были 70/75/80 — от ЧУЖОЙ
+ * шкалы THI₃ (Du et al. 2020, диапазон 60–90); та же форма даёт значения
+ * 22–35, поэтому зоны «опасный/критический» были недостижимы в принципе
+ * (птица всегда «норма» вплоть до экстремальной жары). Граница 28.85 —
+ * середина зазора округления между moderate (до 28.8) и severe (от 28.9).
+ */
 export function thiPoultry(tdb: number, rh: number): SpeciesThi {
   const twb = wetBulb(tdb, rh);
   const v = 0.6 * tdb + 0.4 * twb;
-  if (v < 70) return { value: v, label: 'птица', zone: 'норма', color: '#5f9e5f' };
-  if (v < 75) return { value: v, label: 'птица', zone: 'лёгкий стресс', color: '#e0a636' };
-  if (v < 80) return { value: v, label: 'птица', zone: 'опасный (питьё/вент.)', color: '#d95f2b' };
+  if (v < 27.8) return { value: v, label: 'птица', zone: 'норма', color: '#5f9e5f' };
+  if (v < 28.85) return { value: v, label: 'птица', zone: 'лёгкий стресс', color: '#e0a636' };
+  if (v < 30.0) return { value: v, label: 'птица', zone: 'опасный (питьё/вент.)', color: '#d95f2b' };
   return { value: v, label: 'птица', zone: 'критический (падёж)', color: '#c0392b' };
 }
 
@@ -89,19 +98,26 @@ export function coldStress(t: number, vMs: number): ColdStress {
 /* ============ 4. HLI / AHL (Gaughan et al. 2008, JAS 86:329) ============ */
 
 /**
- * HLI (Heat Load Index, Gaughan et al. 2008) — каноническая двухчастная форма:
+ * HLI (Heat Load Index, Gaughan, Mader & Holt 2008, JAS 86:329, PMID 17911236)
+ * — каноническая двухчастная форма:
  *   BG ≥ 25°C: HLI = 8.62 + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS)
- *   BG < 25°C: HLI = 1.3  + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS)
+ *   BG < 25°C: HLI = 10.66 + 0.28·RH + 1.3·BG − WS
  * BG — температура чёрного глобуса (°C), RH — %, WS — м/с.
  * Глобус оцениваем: BG ≈ Tdb + 0.016·SWR (солнечная радиация, Вт/м²).
  * Ревизия 2026-09-07: было «THI + 0.35·(TG−Tdb) − 1.4·WS» — не HLI;
  * заменено на опубликованную формулу.
+ * ФИКС 2026-11-01 (научный аудит SW-05): холодная ветка была структурой
+ * горячей с подменённой константой (1.3 + 0.38·RH + 1.55·BG − 0.5·WS +
+ * e^(2.4−WS)) — завышала HLI на ~4.6 ед уже при 20 °C (57.9 вместо 53.26
+ * по Gaughan 2008); вся зима/межсезонье давала ложное накопление AHL.
+ * Заменена на опубликованную холодную ветку (без exp-члена).
  */
 export function hli(tdb: number, rh: number, swrWm2: number, windMs: number): number {
   const bg = tdb + 0.016 * Math.max(0, swrWm2 ?? 0);
   const ws = Math.max(0, Math.min(18, windMs));
-  const base = (bg >= 25 ? 8.62 : 1.3) + 0.38 * rh + 1.55 * bg - 0.5 * ws;
-  return +(base + Math.exp(2.4 - ws)).toFixed(1);
+  if (bg >= 25)
+    return +(8.62 + 0.38 * rh + 1.55 * bg - 0.5 * ws + Math.exp(2.4 - ws)).toFixed(1);
+  return +(10.66 + 0.28 * rh + 1.3 * bg - ws).toFixed(1);
 }
 
 export interface AhlResult {

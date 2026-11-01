@@ -27,8 +27,23 @@ eq('milkLoss(78)', milkLoss(78), 1.2);
 eq('wetBulb(20,50) — пример Stull', wetBulb(20, 50), 13.7, 0.3);
 eq('wetBulb(25,50)', wetBulb(25, 50), 18.0, 0.4);
 eq('wetBulb(30,30)', wetBulb(30, 30), 18.3, 0.6);
-/* THI птицы = 0.6·Tdb + 0.4·Twb */
+/* THI птицы = 0.6·Tdb + 0.4·Twb. Пороги — Lallo et al. 2018 (шкала подтверждена
+ * Poultry Science 2025, PMC12098143): comfort <27.8, moderate 27.8–28.8,
+ * severe 28.9–29.9, emergency ≥30.0.
+ * ФИКС 2026-11-01 (SW-05): якорь был 70/75/80 — пороги чужой шкалы THI₃
+ * (Du 2020); обновлены на значения своей шкалы. */
 eq('thiPoultry(30,60)', thiPoultry(30, 60).value, 0.6 * 30 + 0.4 * wetBulb(30, 60), 0.25);
+{
+  const zp = (t: number, rh: number) => thiPoultry(t, rh).zone;
+  const okZones =
+    zp(25, 60) === 'норма' &&
+    zp(32, 50) === 'лёгкий стресс' && /* 28.80 — moderate 27.8–28.8 */
+    zp(32, 60) === 'опасный (питьё/вент.)' && /* 29.52 — severe 28.9–29.9 */
+    zp(35, 50) === 'критический (падёж)'; /* 31.64 — emergency ≥30.0 */
+  console.log(`${okZones ? 'PASS' : 'FAIL'} THI птицы зоны Lallo 2018 (27.8/28.85/30.0): 25°→норма, 32°→лёгкий/опасный, 35°→критический`);
+  if (!okZones) process.exitCode = 1;
+  eq('thiPoultry(35,50) = 31.6 → emergency (Lallo)', thiPoultry(35, 50).value, 31.6, 0.3);
+}
 
 /* HLI Gaughan 2008: BG≥25 → 8.62 + 0.38·RH + 1.55·BG − 0.5·WS + e^(2.4−WS) */
 // Tdb=30, SR=400 → BG≈36.4; RH=60; WS=2
@@ -36,10 +51,11 @@ eq('thiPoultry(30,60)', thiPoultry(30, 60).value, 0.6 * 30 + 0.4 * wetBulb(30, 6
   const bg = 30 + 0.016 * 400;
   const want = 8.62 + 0.38 * 60 + 1.55 * bg - 0.5 * 2 + Math.exp(2.4 - 2);
   eq('HLI(30,60,400,2)', hli(30, 60, 400, 2), want);
-  // холодная ветвь: BG<25
-  const bg2 = 20;
-  const want2 = 1.3 + 0.38 * 70 + 1.55 * bg2 - 0.5 * 3 + Math.exp(2.4 - 3);
-  eq('HLI холод(20,70,0,3)', hli(20, 70, 0, 3), want2);
+  // холодная ветвь: BG<25 → 10.66 + 0.28·RH + 1.3·BG − WS (без exp-члена).
+  // ФИКС 2026-11-01 (SW-05): якорь 57.9 был от ошибочной копии горячей ветки;
+  // опубликованное значение Gaughan 2008 при (20,70,0,3) — 53.26.
+  eq('HLI холод(20,70,0,3) = 53.26 (Gaughan 2008)', hli(20, 70, 0, 3), 53.26, 0.05);
+  eq('HLI холод(15,80,0,1) = 51.6', hli(15, 80, 0, 1), 10.66 + 0.28 * 80 + 1.3 * 15 - 1, 0.05);
 }
 /* AHL: порог 78, распад 0.98 */
 {
@@ -184,4 +200,17 @@ if (cls(6, true) !== 'комфорт' || cls(2, true) !== 'холод: лёгк�
         }
   if (!sane) { console.log('FAIL CCI сетка'); process.exitCode = 1; }
   else console.log('PASS CCI конечен и в коридоре [-75..85] на сетке');
+}
+
+/* АЧС-коридор: скорость фронта 2 км/мес (PMC7157679: локальное распространение
+ * АЧС в популяции кабана 2–5 км/мес, консервативное значение) × горизонт
+ * 20 мес = ≤40 км хода. ФИКС 2026-11-01 (SW-05): было 12 км/ночь
+ * (240 км за 20 ночей ≈ 360 км/мес — на два порядка выше реального фронта). */
+import { getAsfSpread, ASF_KM_PER_MONTH } from '../src/lib/models/asf';
+{
+  const cells = getAsfSpread(0, 20);
+  const maxMonths = cells.length ? Math.max(...cells.map((c) => c.months)) : 0;
+  const okAsf = cells.length > 0 && maxMonths <= 20 && ASF_KM_PER_MONTH === 2;
+  console.log(`${okAsf ? 'PASS' : 'FAIL'} АЧС коридор: ${cells.length} клеток · макс ${maxMonths} мес · фронт ${ASF_KM_PER_MONTH} км/мес (PMC7157679)`);
+  if (!okAsf) process.exitCode = 1;
 }

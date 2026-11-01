@@ -46,10 +46,11 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function daysColor(days: number): string {
-  if (days <= 2) return '#c0392b';
-  if (days <= 5) return '#d95f2b';
-  if (days <= 10) return '#e0a636';
+/** Цвет клетки коридора АЧС по месяцу достижения фронта (PMC7157679: 2 км/мес). */
+function monthsColor(months: number): string {
+  if (months <= 2) return '#c0392b';
+  if (months <= 5) return '#d95f2b';
+  if (months <= 10) return '#e0a636';
   return '#b6c94b';
 }
 
@@ -305,7 +306,7 @@ export default function GisMap(props: GisMapProps) {
           [c.lat - half, c.lon - half],
           [c.lat + half, c.lon + half],
         ],
-        { color: daysColor(c.days), weight: 0, fillColor: daysColor(c.days), fillOpacity: 0.42 },
+        { color: monthsColor(c.months), weight: 0, fillColor: monthsColor(c.months), fillOpacity: 0.42 },
       ).addTo(lg);
     }
     const ob = ASF_DEMO_OUTBREAKS[props.outbreakIdx];
@@ -322,15 +323,15 @@ export default function GisMap(props: GisMapProps) {
         .addTo(lg);
     });
     const rings: [number, string, string][] = [
-      [5_000, '#c0392b', 'I зона: карантин'],
-      [20_000, '#d95f2b', 'II зона: наблюдение'],
-      [100_000, '#e0a636', 'III зона: контроль'],
+      [5_000, '#c0392b', 'I: угрожаемая зона (от 5 км)'],
+      [20_000, '#d95f2b', 'II: угрожаемая зона (до 20 км)'],
+      [100_000, '#e0a636', 'III: зона наблюдения (до 100 км)'],
     ];
     for (const [r, color, label] of rings) {
       L.circle([ob.lat, ob.lon], {
         radius: r, color, weight: 1.5, dashArray: '6 6', fillOpacity: 0.03,
       })
-        .bindTooltip(`${label} (5/20/100 км)`)
+        .bindTooltip(`${label} (упрощённые радиусы 5/20/100 км · приказ МСХ № 37)`)
         .addTo(lg);
     }
   }, [props.outbreakIdx, props.layers.asf, props.onSelectOutbreak]);
@@ -345,7 +346,7 @@ export default function GisMap(props: GisMapProps) {
         <div><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#d95f2b]" />THI тяжёлый 80+</div>
         <div><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#c0392b]" />THI критич. 90+</div>
         <div className="mt-1 border-t border-[#3a4030] pt-1">
-          <span className="mr-1 text-[#c0392b]">▨</span>коридор АЧС (дни) ·
+          <span className="mr-1 text-[#c0392b]">▨</span>коридор АЧС (мес) ·
           <span className="mx-1 text-[#e8d9a0]">➤</span>METAR ·
           <span className="mr-1 text-[#69b45f]">◆</span>OSINT MQTT ·
           <span className="ml-1 text-[#e0a636]">▦</span>аэрозоль-плюм
