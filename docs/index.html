@@ -54,7 +54,13 @@ a{color:var(--ds-blue);text-decoration:none} a:hover{text-decoration:underline}
 
 /* ── header ─────────────────────────── */
 header{
-  position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--panel) 92%, transparent);backdrop-filter:blur(6px);
+  position:sticky;top:0;z-index:50;
+  /* Ш2 (QA 03): фолбэк-литерал до color-mix — по собственному правилу ДС
+     (Chrome<111/Safari<16.2 не знают color-mix → шапка стала бы прозрачной) */
+  background:var(--panel);
+  background:color-mix(in srgb, var(--panel) 92%, transparent);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
   border-bottom:1px solid var(--border);
 }
 .h-in{max-width:1480px;margin:0 auto;padding:9px 16px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
@@ -166,6 +172,8 @@ tr:hover td{background:color-mix(in srgb, var(--accent) 4%, transparent)}
 
 /* ── footer ─────────────────────────── */
 footer{margin-top:18px;border-top:1px solid var(--border2);padding-top:12px;font-size:12px;color:var(--dim);line-height:1.7}
+/* П1 (QA 03): длина строки справки/дисклеймера — 45–90 знаков, не ~208 */
+footer details.fcol{max-width:75ch}
 footer b{color:var(--muted)}
 /* Task 195: подвал свёрнут — стена текста (источники/индексы/дисклеймер)
    по желанию; легал-строка видна всегда */
@@ -179,7 +187,10 @@ footer .flegal{margin-top:6px}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
 
 /* ── leaflet-карта ─────────────────────── */
-#lfmap{height:430px;background:var(--panel)}
+#lfmap{height:430px;background:var(--panel);isolation:isolate}
+/* Б2 (QA 03): isolation — #lfmap создаёт stacking context, чтобы панели
+   Leaflet (z-index 200–700) не конкурировали в корневом контексте со
+   sticky-шапкой (z-index 50) и не рисовали карту поверх неё */
 #lfmap.leaflet-container{background:var(--panel);font-family:inherit}
 .leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border:1px solid var(--border2);border-radius:8px;box-shadow:0 4px 18px color-mix(in srgb,var(--ds-text) 12%,transparent)}
 .leaflet-popup-tip{background:var(--panel);border:1px solid var(--border2);box-shadow:none}
@@ -233,7 +244,7 @@ footer .flegal{margin-top:6px}
 .btn.tm.on{background:var(--z1bg);color:var(--z1fg);border-color:color-mix(in srgb,var(--z1fg) 35%,transparent)}
 
 /* ── проверка прогноза (ретроспектива) ── */
-#fcHelp{padding:7px 16px 9px;font-size:12px;color:var(--muted);line-height:1.55;border-bottom:1px solid var(--border2)}
+#fcHelp{padding:7px 16px 9px;font-size:12px;color:var(--muted);line-height:1.55;border-bottom:1px solid var(--border2);max-width:75ch}
 #fcHelp b{color:var(--text);font-weight:700}
 .v-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media(max-width:900px){.v-grid{grid-template-columns:repeat(2,1fr)}}
@@ -329,8 +340,8 @@ footer .flegal{margin-top:6px}
   <details class="panel" id="milkPanel">
     <summary><div class="p-h"><b>ЭКОНОМИКА ТЕПЛОВОГО СТРЕССА</b><span>головы × THI → литры и рубли · Ravagnolo &amp; Misztal 2000</span><span class="right" id="milkPeek"></span><span class="right" id="milkHint">развернуть ▾</span></div></summary>
     <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-      <label>голов дойных: <input class="milk-in" id="milkHeads" type="number" min="0" step="1" value="200"></label>
-      <label>цена молока, ₽/л: <input class="milk-in" id="milkPrice" type="number" min="0" step="0.5" value="40"></label>
+      <label>голов дойных: <input class="milk-in" id="milkHeads" type="number" min="0" max="1000000" step="1" value="200"></label>
+      <label>цена молока, ₽/л: <input class="milk-in" id="milkPrice" type="number" min="0" max="1000" step="0.5" value="40"></label>
       <span id="milkOut" style="flex:1;min-width:260px;font-size:12px;line-height:1.5">…</span>
     </div>
   </details>
@@ -511,9 +522,20 @@ async function loadAll(){
   const days=[]; const now=new Date();
   for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5+3*3600e3))); // даты снапшотов — МСК
   const snaps=await Promise.all(days.map(dd=>jget(RAW+'/snapshots/'+dd+'.json').catch(()=>null)));
-  S.snaps=snaps.filter(Boolean);
-  if(!S.latest){
-    $('errBanner').textContent='НЕТ СВЯЗИ: не читаются '+errs.join(', ')+' · проверьте доступность github.com/shray77/vet-meteo';
+  /* Б1 (QA 03): сбой сети не должен молча стирать 72-ч историю и спарклайны.
+     Дни, прочитанные успешно, обновляются; упавшие остаются из прошлого
+     успешного цикла; полностью пустой ответ не трогает накопленный архив. */
+  const fresh=snaps.filter(Boolean);
+  if(fresh.length){
+    const byDay=new Map(S.snaps.map(sn=>[sn.date,sn]));
+    for(const sn of fresh)byDay.set(sn.date,sn);
+    S.snaps=days.map(dd=>byDay.get(dd)).filter(Boolean);
+  }
+  if(!fresh.length&&S.snaps.length)errs.push('архив снапшотов');
+  /* честный флаг: любой упавший запрос, ломающий свежесть (не только !S.latest) */
+  if(errs.length){
+    $('errBanner').textContent=(S.latest?'СБОЙ СЕТИ':'НЕТ СВЯЗИ')+': не читаются '+errs.join(', ')
+      +(S.latest?' — показаны последние успешные данные (могут быть устаревшими)':' · проверьте доступность github.com/shray77/vet-meteo');
     $('errBanner').style.display='block';
   }
   renderAll();
@@ -566,13 +588,22 @@ function renderHeader(){
   $('archiveBadge').textContent='архив: '+hrs+' ч · '+S.snaps.length+' дн';
   $('archiveBadge').className='badge'+(hrs>1?' ok':'');
   $('metarBadge').textContent='METAR: '+((L.metar||[]).length||'—');
-  /* метроном CI: срез каждые ~19 мин после выпуска (кроны 7/27/47 — резерв) */
+  /* метроном CI: срез каждые ~19 мин после выпуска (кроны 7/27/47 — резерв).
+     П3 (QA 03): при простое пайплайна бейдж честно говорит об опоздании,
+     а не «с минуты на минуту» вечно */
   const la=L.generatedAt?new Date(L.generatedAt).getTime():0;
   if(la){
-    const nxt=new Date(la+19*60e3);
-    $('nextBadge').textContent = nxt<=new Date()
-      ? 'след. срез: с минуты на минуту'
-      : 'след. срез ~'+pad((nxt.getUTCHours()+3)%24)+':'+pad(nxt.getUTCMinutes())+' МСК';
+    const nxt=new Date(la+19*60e3), now=new Date();
+    const lateMin=Math.round((now-nxt)/60e3);
+    if(lateMin>30){
+      $('nextBadge').className='badge warn';
+      $('nextBadge').textContent='срез опаздывает '+(lateMin>=90?Math.round(lateMin/60)+' ч':lateMin+' мин')+' · данные '+hhmm(L.generatedAt);
+    }else{
+      $('nextBadge').className='badge';
+      $('nextBadge').textContent = nxt<=now
+        ? 'след. срез: с минуты на минуту'
+        : 'след. срез ~'+pad((nxt.getUTCHours()+3)%24)+':'+pad(nxt.getUTCMinutes())+' МСК';
+    }
   }else{
     $('nextBadge').textContent='след. срез ~19 мин';
   }
@@ -615,7 +646,7 @@ function renderKPIs(){
 /* ── экономика теплового стресса: головы × потери × цена = рубли ── */
 function renderMilk(){
   const L=S.latest,O=S.outlook;
-  const heads=Math.max(0,+$('milkHeads').value||0), price=Math.max(0,+$('milkPrice').value||0);
+  const heads=Math.min(1e6,Math.max(0,+$('milkHeads').value||0)), price=Math.min(1000,Math.max(0,+$('milkPrice').value||0));
   const rub=v=>Math.round(v).toLocaleString('ru-RU'), lit=v=>Math.round(v).toLocaleString('ru-RU');
   const out=$('milkOut'), panel=$('milkPanel'), peek=$('milkPeek');
   /* свёрнутый заголовок: живая цифра потерь + подсветка при стрессе (во ВСЕХ ветках выхода) */
@@ -749,8 +780,11 @@ function renderMap(){
       LF.st.addLayer(m);
     }
     if(!LF.fit&&eff.length){LF.map.fitBounds(L.latLngBounds(eff.map(e=>[e.s.lat,e.s.lon])).pad(0.08));LF.fit=true;}
+    /* Ш1 (QA 03): подпись карты показывает фактический клампнутый час k,
+       как попап — «+48 ч» обещает 48-й, а массивы дают максимум +47-й */
+    const kShown=anyFc?Math.max(0,...eff.filter(e=>e.fc).map(e=>e.k)):0;
     $('mapSub').textContent=eff.length+' станций · цвет/радиус = '+(anyFc?'прогноз THI':'THI');
-    $('mapRight').textContent=anyFc?('прогноз +'+S.tmOff+' ч · '+addH(S.forecast.h0,S.tmOff).slice(11,16)+' МСК'):('срез '+hhmm(Lv.generatedAt));
+    $('mapRight').textContent=anyFc?('прогноз +'+kShown+' ч · '+addH(S.forecast.h0,kShown).slice(11,16)+' МСК'):('срез '+hhmm(Lv.generatedAt));
     $('tmNote').textContent=anyFc?('прогноз от среза '+hhmm(S.forecast.generatedAt)):(S.tmOff>0?'прогноз недоступен — текущий срез':'текущий срез');
   }else{
     $('lfmap').style.display='none';$('mapSvg').style.display='block';
@@ -812,7 +846,7 @@ function renderTable(){
       +'<td>'+spark(hist(s.id))+'</td>'
       +'<td><span class="chip z'+zt+'" style="min-width:44px;font-size:11px">'+fmt(s.thiMaxToday)+'</span></td>'
       +'<td style="color:'+bcol+';font-weight:700">'+(s.brd==null?'—':fmt(s.brd,0))+'</td>'
-      +'<td class="small-dim">'+(s.precip24?fmt(s.precip24,0)+' мм':'—')+'</td>'
+      +'<td class="small-dim">'+(s.precip24?fmt(s.precip24)+' мм':'—')+'</td>' /* П6 (QA 03): одна десятая, как в попапе */
       +'</tr>';
   }).join('');
   document.querySelectorAll('#stTable th.sortable').forEach(th=>{
