@@ -1,0 +1,62 @@
+name: vectors-season
+
+# «Сезон векторов» (Task 238): ретро-расчёт сезонной модели Hyalomma (КГЛ)
+# по ERA5-архиву Open-Meteo → data/vectors.json. Панель на дашборде читает файл.
+#
+# ЗАПУСК: только вручную (workflow_dispatch) — дебаты Task 238: суточный schedule
+# всю зиму «кормил бы нули» и создавал поверхность стейл-риска; холостые прогоны
+# по кнопке дёшевы и обкатывают годовой шов аккумулятора (аргумент Академика).
+# В апреле 2027, к открытию сезона, раскомментируй cron-строку ниже (одна правка)
+# и оставь workflow_dispatch как ручной резерв.
+on:
+  workflow_dispatch: {}
+  # schedule:
+  #   - cron: '23 4 * * *'   # 07:23 МСК, ежедневно — ВКЛЮЧИТЬ В АПРЕЛЕ 2027
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vectors-season
+  cancel-in-progress: false
+
+jobs:
+  vectors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Ретро-расчёт сезона векторов (ERA5)
+        run: node tools/vectors.mjs
+
+      - name: Сводка (МСК)
+        run: |
+          echo '### Сезон векторов · Hyalomma marginatum (КГЛ)' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          node -e "const v=require('./data/vectors.json');console.log('расчёт:',new Date(v.generatedAt).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false}),'МСК; окно 2026-01-01..'+v.dataEnd);for(const s of v.stations)console.log(s.name+': '+s.season.label+', дней пика квестинга '+s.questing.peak);console.log('регион: открыт '+(v.region.openMonth||'—')+', закрыт '+(v.region.closeMonth||'—'))" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Коммит
+        run: |
+          git config user.name "vet-meteo-bot"
+          git config user.email "actions@github.com"
+          git add data/vectors.json
+          if git diff --cached --quiet; then
+            echo "нет изменений"
+          else
+            git commit -m "data: сезон векторов $(TZ='Europe/Moscow' date '+%d.%m %H:%M') МСК [skip ci]"
+            ok=0
+            for i in 1 2 3 4 5; do
+              if git pull --rebase --autostash origin main && git push; then ok=1; break; fi
+              echo "попытка пуша $i не прошла, ждём $((i*15)) с"
+              sleep $((i*15))
+            done
+            [ "$ok" = 1 ] || { echo "пуш не прошёл за 5 попыток"; exit 1; }
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

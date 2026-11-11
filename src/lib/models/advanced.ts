@@ -151,9 +151,13 @@ export interface DiroResult {
 }
 
 /**
- * Heartworm Development Units (Knight & Lok):
+ * Heartworm Development Units:
  * HDU = Σ(Tmean − 14) за дни с Tmean > 14 °C. L3 личинки D. immitis
  * становятся инфективными ≈ при 130 HDU. Сезон — окно прогноза + экстраполяция.
+ * Аудит 2026-11-12 (Task 238): пара 14°C/130 HDU — Fortin & Slocombe 1981
+ * (первоисточник; см. Ledesma & Nawa 2015, PMC4390526: «…mature to infective
+ * stage L3 larvae… once 130 HDUs have been accumulated (Fortin and
+ * Slocombe 1981)»). Атрибуция «Knight, Lok» была неточной — исправлена.
  */
 export function dirofilaria(daily: { tMax: number; tMin: number }[]): DiroResult {
   let hdu = 0;
@@ -187,7 +191,15 @@ export interface WnvResult {
 
 /**
  * Векторная активность Culex pipiens: GDD₁₀ (база 10°С) за окно
- * + оптимум 22–28°С + увлажнение. Схематично, скрининг.
+ * + оптимум 25±6°С + увлажнение. Схематично, скрининг.
+ * Аудит 2026-11-12 (Task 238): температурный каркас согласуется с Platonov
+ * 2014 (PMC3945534): гонотрофический цикл/EIP ускоряются в 18–30°C
+ * (EIP 30 дн @18°C → 10 дн @26°C); эпидсезон ВЗН юга РФ июль–октябрь, пик
+ * недели 34–36; для Ростовской обл. главный драйвер — температура мая.
+ * Осадочный член: Platonov 2014 — осадки/влажность НЕ коррелировали со
+ * заболеваемостью ни в одной из трёх областей юга РФ (против Saskatchewan-
+ * моделей, где низкие осадки — фактор риска) — член оставлен как эвристика,
+ * первоисточником для юга РФ не подтверждён.
  */
 export function wnvRisk(daily: { tMax: number; tMin: number; precipSum: number }[]): WnvResult {
   let gdd = 0;
@@ -328,8 +340,16 @@ export interface MidgeResult {
 }
 
 /**
- * «Midge-day» (по мотивам EFSA AHAW): активность Culicoides при
- * Tmean ≥ 13 °С; transmission-окно при Tmean ≥ 15 °С.
+ * «Midge-day» Culicoides — блютанг/Шмалленберг. Аудит 2026-11-12 (Task 238):
+ * база 13°C и окно ≥15°C были эвристикой. EFSA AHAW 2017 (EFSA J 15(7):4698,
+ * PMC7009973, Tier 1): «mapping predicted vector activity according to a
+ * temperature threshold of 10°C over Europe, selected according to results
+ * from laboratory experiments on Culicoides development and to the estimation
+ * of temperature-dependent R0 threshold values»; порог трансмиссии БТВ —
+ * «between 9.0 and 12.0°C» (вид/экоклимат зависимы). Фикс: активность при
+ * Tmean ≥ 10°C, окно передачи — консервативно от ≥12°C (верхняя граница
+ * коридора EFSA). Лёт <10% при 10°C и 35°C, максимум при 20°C (Jones 2026,
+ * J Med Entomol) — качественно согласуется с порогом активности 10°C.
  */
 export function midgeDays(daily: { tMax: number; tMin: number }[]): MidgeResult {
   let md = 0;
@@ -337,17 +357,17 @@ export function midgeDays(daily: { tMax: number; tMin: number }[]): MidgeResult 
   for (const d of daily) {
     const m = (d.tMax + d.tMin) / 2;
     tMean7 += m;
-    md += Math.max(0, m - 13);
+    md += Math.max(0, m - 10);
   }
   const tm = tMean7 / Math.max(1, daily.length);
   return {
     midgeDays: +md.toFixed(1),
-    active: tm >= 13,
+    active: tm >= 10,
     note:
-      tm >= 15
+      tm >= 12
         ? 'окно передачи BTV/SBV: карантинные перемещения — по правилам зонирования'
-        : tm >= 13
-          ? 'миджсы активны, но окно передачи <15°С — низкое'
+        : tm >= 10
+          ? 'миджсы активны, но окно передачи <12°C (EFSA: порог 9–12)'
           : 'Culicoides неактивны (вектор-фри период)',
   };
 }

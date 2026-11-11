@@ -44,7 +44,7 @@ export default function InfoDialog() {
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Трансмиссивные</h3>
-              <p className="text-[#b8bca8]">Дирофиляриоз: HDU = Σ(Tmean−14)⁺, L3 ≈ 130 HDU (Knight, Lok). ВЗН/Culex: GDD₁₀ + оптимум 25±6°С + осадки. Culicoides: midge-days Σ(Tmean−13)⁺, окно передачи ≥15°С (EFSA-подход).</p>
+              <p className="text-[#b8bca8]">Дирофиляриоз: HDU = Σ(Tmean−14)⁺, L3 ≈ 130 HDU (Fortin & Slocombe 1981, ауд-якорь Ledesma 2015). ВЗН/Culex: GDD₁₀ + оптимум 25±6°С + осадки (эвристика; для юга РФ осадки не подтверждены — Platonov 2014). Culicoides: midge-days Σ(Tmean−10)⁺, активность ≥10°С, окно передачи ≥12°С (EFSA AHAW 2017: порог активности 10°C, трансмиссия 9–12°C).</p>
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">BRD — респираторные болезни телят</h3>
@@ -53,8 +53,8 @@ export default function InfoDialog() {
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Клещи и КГЛ</h3>
-              <p className="text-[#b8bca8]">GDD₁₀ = Σ max(0, T_mean − 10). Hyalomma marginatum — активность ≈ GDD/140 (степной юг, лето), Dermacentor — ≈ GDD/90 (весна).</p>
-              <p className="text-[#8a8f78]">КГЛ-риск = эндемичность района (45) + активность × 55, с поправкой на сухость по VPD. Районы эндемичности: север Ростовской обл.</p>
+              <p className="text-[#b8bca8]">GDD₁₀ = Σ max(0, T_mean − 10). Hyalomma marginatum — активность ≈ GDD/140 (степной юг, лето), Dermacentor — ≈ GDD/90 (весна). Нормировки 140/90 — эвристика, первоисточником не подтверждены (аудит 2026-11-12).</p>
+              <p className="text-[#8a8f78]">КГЛ-риск = эндемичность района (45) + активность × 55, с поправкой на сухость по VPD. Районы эндемичности: север Ростовской обл. Сезонная модель «Сезон векторов» (активация взрослых при среднемесячной 10.5°C, квестинг 22–27°C) — src/lib/models/season.ts, якоря ECDC Tier 1.</p>
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Фасциолёз — влагостат</h3>

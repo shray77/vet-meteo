@@ -1,10 +1,12 @@
-/** Проверка моделей: плюм, surveillance, ансамбль + ревизия 2026-09-07 (THIadj, HLI, Tw) + DEM 2026-09-08. */
+/** Проверка моделей: плюм, surveillance, ансамбль + ревизия 2026-09-07 (THIadj, HLI, Tw) + DEM 2026-09-08
+ * + векторные known-answer (аудит формул 2026-11-12, Task 238 «Сезон векторов»). */
 import { getPlume, PLUME_PRESETS } from '../src/lib/models/plume';
 import { demoSeries, ears, rtCori, kulldorffScan, demoScanData, farrington } from '../src/lib/models/surveillance';
 import { perturbedEnsemble } from '../src/lib/models/ensemble';
 import { thi, thiMader, milkLoss } from '../src/lib/models/thi';
-import { wetBulb, hli, ahlAccumulate, thiPoultry } from '../src/lib/models/advanced';
-import { et0 } from '../src/lib/models/parasites';
+import { wetBulb, hli, ahlAccumulate, thiPoultry, dirofilaria, wnvRisk, midgeDays } from '../src/lib/models/advanced';
+import { et0, gdd10, ticksOutlook, cchfRisk, fasciolaIndex } from '../src/lib/models/parasites';
+import { hyalommaSeason, questingClass, questingStats, monthlyMeansFromDaily, HYALOMMA_ANCHORS, monthRu } from '../src/lib/models/season';
 import { demElevation } from '../src/lib/geo/rostov';
 import { slopeAt, coldPoolIndex, windExposure, topoInfoAt } from '../src/lib/topo/topo';
 
@@ -213,4 +215,145 @@ import { getAsfSpread, ASF_KM_PER_MONTH } from '../src/lib/models/asf';
   const okAsf = cells.length > 0 && maxMonths <= 20 && ASF_KM_PER_MONTH === 2;
   console.log(`${okAsf ? 'PASS' : 'FAIL'} АЧС коридор: ${cells.length} клеток · макс ${maxMonths} мес · фронт ${ASF_KM_PER_MONTH} км/мес (PMC7157679)`);
   if (!okAsf) process.exitCode = 1;
+}
+
+/* ==== ВЕКТОРНЫЕ МОДЕЛИ — known-answer (аудит формул 2026-11-12, Task 238) ====
+ * Якоря первоисточников (полный отчёт — download/vet-meteo-vector-audit.md):
+ *  - ECDC (Tier 1): Hyalomma — активация при среднемесячной 10.5°C, квестинг 22–27°C, затишье >30°C.
+ *  - EFSA AHAW 2017 (Tier 1): Culicoides — порог активности 10°C, трансмиссия БТВ 9–12°C (фикс базы 13→10, окна 15→12).
+ *  - Fortin & Slocombe 1981 (via Ledesma 2015, Tier 2): HDU = Σ(Tmean−14)⁺, L3 при 130 HDU.
+ *  - Platonov 2014 (Tier 2): ВЗН юга РФ — эпидсезон июль–октябрь, пик нед. 34–36; каркас температур 18–30°C.
+ *  - Volynkina 2022 / Pshenichnaya 2020 (Tier 2): КГЛ Ростовской обл. эндемичен (750/710 случаев).
+ * Эвристики без первоисточника (нормировки 140/90 клещей, VPD-штрафы КГЛ, пороги 50/20 фасциолёза,
+ * осадочный член ВЗН) — тесты ПИНУЮТ текущее поведение как регрессию, не как «науку». */
+
+/* --- Пороги-константы со ссылкой (сверка) --- */
+{
+  const okA =
+    HYALOMMA_ANCHORS.activationMonthlyMean === 10.5 &&
+    HYALOMMA_ANCHORS.questingMin === 22 &&
+    HYALOMMA_ANCHORS.questingMax === 27 &&
+    HYALOMMA_ANCHORS.heatHide === 30;
+  console.log(`${okA ? 'PASS' : 'FAIL'} якоря Hyalomma ECDC: активация 10.5°C / квестинг 22–27°C / затишье >30°C`);
+  if (!okA) process.exitCode = 1;
+}
+
+/* --- GDD₁₀ (parasites.ts) --- */
+eq('GDD₁₀ 3×(30,20) = 45', gdd10([{ tMax: 30, tMin: 20 }, { tMax: 30, tMin: 20 }, { tMax: 30, tMin: 20 }]), 45);
+eq('GDD₁₀ обрезка 35°C: (40,30) → 25', gdd10([{ tMax: 40, tMin: 30 }]), 25);
+eq('GDD₁₀ холод (10,0) → 0', gdd10([{ tMax: 10, tMin: 0 }]), 0);
+
+/* --- Клещевой 7-дневный датчик (эвристика, пин регрессии) --- */
+{
+  const t7 = ticksOutlook(Array.from({ length: 7 }, () => ({ tMax: 30, tMin: 20 })));
+  const ok = t7.gdd === 105 && t7.hyalomma === 75 && t7.dermacentor === 88;
+  console.log(`${ok ? 'PASS' : 'FAIL'} ticksOutlook 7×(30,20): GDD 105, Hyalomma 75, Dermacentor 88 (пин эвристики 140/90)`);
+  if (!ok) process.exitCode = 1;
+  const t0 = ticksOutlook(Array.from({ length: 7 }, () => ({ tMax: 10, tMin: 0 })));
+  const ok0 = t0.gdd === 0 && t0.hyalomma === 0 && t0.label === 'низкая активность';
+  console.log(`${ok0 ? 'PASS' : 'FAIL'} ticksOutlook холод: GDD 0, низкая активность`);
+  if (!ok0) process.exitCode = 1;
+}
+
+/* --- КГЛ (эвристика поверх эндемичности, пин) --- */
+{
+  // tMean=25, rh=50 → es≈31.7 гПа → VPD≈15.8 (>12 → штраф 0.85); activity=105/140=0.75
+  const r = cchfRisk({ endemic: true, daily: Array.from({ length: 7 }, () => ({ tMax: 30, tMin: 20 })), rhMean: 50, tMean: 25 });
+  eq('КГЛ эндем 7×(30,20), rh50 → 80', r.risk, 80);
+  const rne = cchfRisk({ endemic: false, daily: Array.from({ length: 7 }, () => ({ tMax: 30, tMin: 20 })), rhMean: 50, tMean: 25 });
+  eq('КГЛ неэндем база 8 + 35 → 43', rne.risk, 43);
+}
+
+/* --- Фасциолёз (качественные якоря, сезон-независимые) --- */
+{
+  const wet = fasciolaIndex({ daily: Array.from({ length: 7 }, () => ({ tMax: 22, tMin: 12, precipSum: 80 })), lat: 47 });
+  const dry = fasciolaIndex({ daily: Array.from({ length: 7 }, () => ({ tMax: 22, tMin: 12, precipSum: 0 })), lat: 47 });
+  const ok = wet.level === 'high' && dry.level === 'low';
+  console.log(`${ok ? 'PASS' : 'FAIL'} фасциолёз: 7×80 мм → high, 0 мм → low (Ollerenshaw-подход: осадки − ET₀)`);
+  if (!ok) process.exitCode = 1;
+}
+
+/* --- Дирофилярия (подтверждено: Fortin & Slocombe 1981, база 14°C, L3 ≈ 130 HDU) --- */
+{
+  const d22 = dirofilaria(Array.from({ length: 22 }, () => ({ tMax: 24, tMin: 16 }))); // tMean 20 → 6 HDU/сут
+  eq('HDU 22×tMean20 = 132', d22.hdu8d, 132);
+  const okInf = d22.infective === true; // 132 ≥ 130 → L3 инфективны
+  console.log(`${okInf ? 'PASS' : 'FAIL'} дирофилярия: 22 дня tMean 20 → 132 HDU ≥ 130 → L3 инфективны (Fortin & Slocombe)`);
+  if (!okInf) process.exitCode = 1;
+  const cold = dirofilaria(Array.from({ length: 10 }, () => ({ tMax: 18, tMin: 12 }))); // tMean 15 → 1 HDU/сут
+  const okCold = cold.hdu8d === 10 && cold.infective === false && cold.hdu30d === 30;
+  console.log(`${okCold ? 'PASS' : 'FAIL'} дирофилярия холод: 10×tMean15 → 10 HDU, hdu30 30 < 130, L3 нет`);
+  if (!okCold) process.exitCode = 1;
+}
+
+/* --- ВЗН/Culex (композит, пин арифметики) --- */
+eq('ВЗН 7×(30,20), сухо → score 80', wnvRisk(Array.from({ length: 7 }, () => ({ tMax: 30, tMin: 20, precipSum: 0 }))).score, 80);
+eq('ВЗН 7×(10,0) → score 0', wnvRisk(Array.from({ length: 7 }, () => ({ tMax: 10, tMin: 0, precipSum: 0 }))).score, 0);
+
+/* --- Culicoides (фикс аудита: база 10°C EFSA, окно ≥12°C) --- */
+{
+  const md = midgeDays(Array.from({ length: 5 }, () => ({ tMax: 25, tMin: 15 }))); // tMean 20 → 10 мидж-дней/сут
+  eq('midge-days 5×tMean20 = 50 (база 10, EFSA 2017)', md.midgeDays, 50);
+  const okW = md.active && md.note.startsWith('окно передачи');
+  const cool = midgeDays(Array.from({ length: 5 }, () => ({ tMax: 14, tMin: 8 }))); // tMean 11: активны, окно <12
+  const okC = cool.midgeDays === 5 && cool.active && cool.note.startsWith('миджсы активны');
+  const off = midgeDays(Array.from({ length: 5 }, () => ({ tMax: 12, tMin: 6 }))); // tMean 9: неактивны
+  const okO = off.midgeDays === 0 && !off.active && off.note.includes('неактивны');
+  console.log(`${okW && okC && okO ? 'PASS' : 'FAIL'} Culicoides EFSA: tMean20→50 md+окно; tMean11→активны без окна; tMean10→неактивны`);
+  if (!(okW && okC && okO)) process.exitCode = 1;
+}
+
+/* --- Сезонная модель Hyalomma («Сезон векторов», якоря ECDC Tier 1) --- */
+{
+  const mm = [-5.2, -4.1, 3.2, 11.2, 17.1, 21.0, 24.4, 23.3, 17.4, 11.0, 4.4, -2.1];
+  const s = hyalommaSeason(mm);
+  const ok1 = s.openMonth === 4 && s.closeMonth === 10 && s.activeMonths.length === 7;
+  console.log(`${ok1 ? 'PASS' : 'FAIL'} сезон Hyalomma: среднемесячные [апр 11.2 … окт 11.0] → окно апр–окт (${s.label})`);
+  if (!ok1) process.exitCode = 1;
+  const none = hyalommaSeason([-5, -4, 3, 9.9, 17, 21, 24, 23, 17, 9.8, 4, -2]);
+  const okN = none.openMonth === 5 && none.closeMonth === 9; // апр/окт ниже 10.5 → окно ужмётся
+  console.log(`${okN ? 'PASS' : 'FAIL'} сезон Hyalomma ужатие: апр 9.9/окт 9.8 < 10.5 → окно май–сен`);
+  if (!okN) process.exitCode = 1;
+  const arctic = hyalommaSeason([-20, -18, -10, 2, 8, 9.9, 10.2, 10.1, 8, 3, -8, -15]);
+  const okA = arctic.openMonth === null && arctic.closeMonth === null; // ни разу 10.5 — нулевая фаза
+  console.log(`${okA ? 'PASS' : 'FAIL'} сезон Hyalomma нулевая фаза: ни одного месяца ≥10.5 → сезон не открывался`);
+  if (!okA) process.exitCode = 1;
+}
+
+/* --- Квестинг-классы (суточные, ECDC) --- */
+{
+  const ok =
+    questingClass(24) === 'peak' &&
+    questingClass(22) === 'peak' &&
+    questingClass(27) === 'peak' &&
+    questingClass(21.9) === 'active' &&
+    questingClass(12) === 'active' &&
+    questingClass(31) === 'heat' &&
+    questingClass(8) === 'off';
+  console.log(`${ok ? 'PASS' : 'FAIL'} квестинг-классы: 22–27 пик, 10.5–21.9 активны, >30 затишье, <10.5 офф`);
+  if (!ok) process.exitCode = 1;
+  const st = questingStats([
+    { tMax: 26, tMin: 22 }, // 24 → peak
+    { tMax: 28, tMin: 24 }, // 26 → peak
+    { tMax: 20, tMin: 16 }, // 18 → active
+    { tMax: 36, tMin: 26 }, // 31 → heat
+    { tMax: 10, tMin: 6 },  // 8 → off
+  ]);
+  const okSt = st.peakDays === 2 && st.activeDays === 1 && st.heatDays === 1 && st.offDays === 1;
+  console.log(`${okSt ? 'PASS' : 'FAIL'} квестинг-стата: пик×2, активны×1, жара×1, офф×1`);
+  if (!okSt) process.exitCode = 1;
+}
+
+/* --- Месячные средние из суточных (для ретро-расчёта) --- */
+{
+  const mm = monthlyMeansFromDaily([
+    { date: '2026-01-05', tMax: 0, tMin: -4 }, // янв: tMean −2
+    { date: '2026-01-20', tMax: 4, tMin: 0 },  // янв: tMean 2 → среднее янв = 0
+    { date: '2026-04-10', tMax: 20, tMin: 8 },  // апр: 14
+  ]);
+  const ok = mm[0] === 0 && mm[3] === 14 && Number.isNaN(mm[1]);
+  console.log(`${ok ? 'PASS' : 'FAIL'} monthlyMeans: янв (−2,2)→0, апр 14, фев NaN (нет дней)`);
+  if (!ok) process.exitCode = 1;
+  const okRu = monthRu(4) === 'апр' && monthRu(null) === '—';
+  if (!okRu) { console.log('FAIL monthRu'); process.exitCode = 1; }
 }

@@ -456,6 +456,10 @@ footer .flegal{margin-top:6px}
       <div class="p-h"><b>СУТОЧНЫЙ ДАЙДЖЕСТ</b><span>daily-outlook · 06:17 МСК</span><span class="right" id="digestRight"></span></div>
       <div class="p-b" id="digestList"><span class="skl">загрузка…</span></div>
     </div>
+    <div class="panel" style="margin-top:0" id="vecPanel">
+      <div class="p-h"><b>СЕЗОН ВЕКТОРОВ · HYALOMMA (КГЛ)</b><span>климат-индекс активности переносчиков · модель v1 · ретро ERA5</span><span class="right" id="vecRight">загрузка…</span></div>
+      <div class="p-b" id="vecBody"><span class="skl">загрузка…</span></div>
+    </div>
     <div class="panel" style="margin-top:0" id="fluPanel">
       <div class="p-h"><b>ОКНА РИСКА ВПГП · VETFLU</b><span>миграция × погода × фон вспышек · 4 флайвея РФ</span><span class="right" id="fluRight">загрузка…</span></div>
       <div class="p-b" id="fluBody"><span class="skl">загрузка…</span></div>
@@ -1264,6 +1268,53 @@ async function loadFlu(){
 }
 loadFlu();
 setInterval(loadFlu,30*60*1000);
+
+/* ── Сезон векторов: Hyalomma marginatum / КГЛ (Task 238, идея №6) ──
+ * Модель v1 (якоря ECDC Tier 1): активация взрослых при среднемесячной 10.5°C,
+ * квестинг при суточной 22–27°C, затишье при >30°C. Данные — data/vectors.json
+ * (ретро-расчёт ERA5, tools/vectors.mjs, воркфлоу vectors-season). */
+const VEC_MONTHS=['','янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+function vecStaticNote(){
+  return '<div class="v-note"><b>Модель v1</b> — якоря ECDC (Tier 1): взрослые активируются при <b>среднемесячной 10.5°C</b>, активно ищут хозяина (квестинг) при суточной <b>22–27°C</b>, при воздухе &gt;30°C — затишье. Фенология (кросс-чек, Carrera-Faja 2023): март–ноябрь, пик апрель–июнь. КГЛ Ростовской обл. эндемичен: 750 случаев 1999–2020 (Volynkina 2022, PLOS ONE). <b>Прототип климатического прокси, не оперативная система</b>: данных ловушек нет, пороги европейские (ECDC factsheet «Hyalomma marginatum»); решения об обработках/вакцинации — за ветслужбой.</div>';
+}
+async function loadVectors(){
+  const right=$('vecRight'),body=$('vecBody');
+  if(!right||!body)return;
+  try{
+    const r=await fetch(RAW+'/vectors.json',{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const v=await r.json();
+    const cur=v.stations.find(s=>s.id==='rostov')||v.stations[0];
+    if(!cur)throw new Error('нет станций');
+    const openNow=v.stations.some(s=>s.current.openNow);
+    const chip=openNow?'<span class="chip z4" style="min-width:110px">СЕЗОН ОТКРЫТ</span>':'<span class="chip z1" style="min-width:110px">СЕЗОН ЗАКРЫТ</span>';
+    const status='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">'+chip
+      +'<span style="font-size:12px;color:var(--text)">сейчас <b>'+cur.current.monthRu+'</b>: среднемесячная '
+      +cur.current.monthMean+'°C '+(cur.current.monthMean>=10.5?'&ge;':'&lt;')+' порога открытия 10.5°C · '
+      +'ретро-окно сезона 2026: '+v.region.openMonth+'–'+v.region.closeMonth+' ('+VEC_MONTHS[v.region.openMonth]+'–'+VEC_MONTHS[v.region.closeMonth]+')</span></div>';
+    let rows='';
+    for(const s of v.stations){
+      rows+='<tr>'
+        +'<td style="padding:3px 8px 3px 0;font-size:11px;color:var(--text)">'+s.name+'</td>'
+        +'<td style="padding:3px 8px;font-size:11px;color:var(--text);white-space:nowrap">'+s.season.openRu+'–'+s.season.closeRu+'</td>'
+        +'<td style="padding:3px 8px;font-size:10px;color:var(--dim)">пик квестинга '+s.questing.peak+' дн · активны '+s.questing.active+' дн · жара &gt;30°C: '+s.questing.heat+' дн</td>'
+        +'</tr>';
+    }
+    const apr=v.stations.map(s=>s.name+' '+s.monthlyMeans[3]+'°C').join(' · ');
+    let h=status
+      +'<table style="width:100%;border-collapse:collapse">'+rows+'</table>'
+      +'<div class="v-note">почему не апрель: среднемесячная апреля 2026 — '+apr+' — ниже порога 10.5°C (прохладная весна). Ожидаемое открытие 2027: ~'+VEC_MONTHS[v.region.openMonth]+' (климатологическая оценка с ретро-2026; фенология по литературе — март–ноябрь) — <b>проверить весной по факту</b>.</div>'
+      +'<div class="v-note">Ретро: ERA5-архив Open-Meteo, окно 2026-01-01..'+v.dataEnd+' · пересчёт — воркфлоу <a href="https://github.com/shray77/vet-meteo/actions/workflows/vectors.yml" target="_blank" rel="noopener" style="color:var(--accent)">vectors-season</a> (ручной запуск; авто-крон — с апреля 2027). '+v.disclaimer+'</div>'
+      +vecStaticNote();
+    body.innerHTML=h;
+    right.textContent='v1 · ретро до '+v.dataEnd.slice(5);
+  }catch(e){
+    body.innerHTML='<div class="v-note">ретро-данные недоступны (воркфлоу vectors-season ещё не прогнан) — ниже статическое описание модели.</div>'+vecStaticNote();
+    right.textContent='';
+  }
+}
+loadVectors();
+setInterval(loadVectors,30*60*1000);
 
 /* Task 195: канвасы перерисовываются под новую ширину окна/панели */
 let rszT=null;
