@@ -1272,7 +1272,10 @@ setInterval(loadFlu,30*60*1000);
 /* ── Сезон векторов: Hyalomma marginatum / КГЛ (Task 238, идея №6) ──
  * Модель v1 (якоря ECDC Tier 1): активация взрослых при среднемесячной 10.5°C,
  * квестинг при суточной 22–27°C, затишье при >30°C. Данные — data/vectors.json
- * (ретро-расчёт ERA5, tools/vectors.mjs, воркфлоу vectors-season). */
+ * (ретро-расчёт ERA5, tools/vectors.mjs, воркфлоу vectors-season).
+ * Task 245: + климатология 1997–2026 + сеть 49 станций + полный якорь с RH —
+ * data/vectors_climatology.json (tools/vectors_climatology.mjs, Task 244,
+ * препринт v3 doi.org/10.5281/zenodo.24203316); снимок опционален. */
 const VEC_MONTHS=['','янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 function vecStaticNote(){
   return '<div class="v-note"><b>Модель v1</b> — якоря ECDC (Tier 1): взрослые активируются при <b>среднемесячной 10.5°C</b>, активно ищут хозяина (квестинг) при суточной <b>22–27°C</b>, при воздухе &gt;30°C — затишье. Фенология (кросс-чек, Carrera-Faja 2023): март–ноябрь, пик апрель–июнь. КГЛ Ростовской обл. эндемичен: 750 случаев 1999–2020 (Volynkina 2022, PLOS ONE). <b>Прототип климатического прокси, не оперативная система</b>: данных ловушек нет, пороги европейские (ECDC factsheet «Hyalomma marginatum»); решения об обработках/вакцинации — за ветслужбой.</div>';
@@ -1301,13 +1304,35 @@ async function loadVectors(){
         +'</tr>';
     }
     const apr=v.stations.map(s=>s.name+' '+s.monthlyMeans[3]+'°C').join(' · ');
+    /* Task 245: климатология 1997–2026 + сеть 49 станций + полный якорь с RH —
+       data/vectors_climatology.json (tools/vectors_climatology.mjs, Task 244).
+       Снимок опционален: без него панель остаётся ретро-2026 v1. */
+    let climHtml='',climTag='';
+    try{
+      const rc=await fetch(RAW+'/vectors_climatology.json',{cache:'no-store'});
+      if(rc.ok){
+        const c=await rc.json();
+        const nm={taganrog:'Таганрог',rostov:'Ростов-н/Д',millerovo:'Миллерово'};
+        const st=['taganrog','rostov','millerovo'];
+        const climRows=st.map(id=>{const s=c.stations[id];
+          return nm[id]+': апрель ≥10.5°C — '+s.aprilGateYears+'/30 лет · открытие апр×'+(s.openMonths['4']||0)+'/май×'+(s.openMonths['5']||0)+' · пик '+s.peakDays.min+'–'+s.peakDays.max+' дн (ср '+s.peakDays.mean+') · тренд '+(s.trends.peakDaysPerDecade>0?'+':'')+s.trends.peakDaysPerDecade+' дн/дек';}).join('<br>');
+        const n=c.network2026,openMayN=n.stations.filter(s=>s.open===5&&s.close===10).length;
+        const rhRows=st.map(id=>{const p=c.stations[id].perYear.find(y=>y.year===2026);
+          return nm[id]+': RH≥75% — '+p.rh75SeasonPct+'% дней сезона · пик квестинга '+p.peak+' → '+p.peakFullAnchor+' дн с RH';}).join('<br>');
+        climHtml='<div class="v-note"><b>Климатология '+c.period+' (Task 244, 30 сезонов, ERA5)</b>:<br>'+climRows+'<br>март не проходил гейт ни разу (0/90 станция-лет) · снимок по '+c.dataEnd+' · препринт v3: <a href="https://doi.org/10.5281/zenodo.24203316" target="_blank" rel="noopener" style="color:var(--accent)">doi.org/10.5281/zenodo.24203316</a></div>'
+          +'<div class="v-note"><b>Сеть 2026 — '+n.stations.length+' станций области</b>: открытие май – закрытие октябрь '+openMayN+'/'+n.stations.length+' · пик '+n.peakDays.min+'–'+n.peakDays.max+' дн (медиана '+n.peakDays.median+', ср '+n.peakDays.mean+') · градиент '+n.trendPeakDaysPerDegreeLat+' дн/градус широты (R²='+n.r2+') — холодный апрель 2026 был областным.</div>'
+          +'<div class="v-note"><b>Чувствительность: полный якорь ECDC с RH≥75%</b>:<br>'+rhRows+'<br>Влажностная половина европейского якоря в степи почти невыполнима — оперативный прокси: температура; расхождение измерено и опубликовано (Task 244).</div>';
+        climTag='v3 (климат '+c.period+') · ';
+      }
+    }catch(e){/* клим-снимок не прогнан — секции не рисуются, панель не ломается */}
     let h=status
       +'<table style="width:100%;border-collapse:collapse">'+rows+'</table>'
       +'<div class="v-note">почему не апрель: среднемесячная апреля 2026 — '+apr+' — ниже порога 10.5°C (прохладная весна). Ожидаемое открытие 2027: ~'+VEC_MONTHS[v.region.openMonth]+' (климатологическая оценка с ретро-2026; фенология по литературе — март–ноябрь) — <b>проверить весной по факту</b>.</div>'
+      +climHtml
       +'<div class="v-note">Ретро: ERA5-архив Open-Meteo, окно 2026-01-01..'+v.dataEnd+' · пересчёт — воркфлоу <a href="https://github.com/shray77/vet-meteo/actions/workflows/vectors.yml" target="_blank" rel="noopener" style="color:var(--accent)">vectors-season</a> (ручной запуск; авто-крон — с апреля 2027). '+v.disclaimer+'</div>'
       +vecStaticNote();
     body.innerHTML=h;
-    right.textContent='v1 · ретро до '+v.dataEnd.slice(5);
+    right.textContent=climTag+'v1-модель · ретро до '+v.dataEnd.slice(5);
   }catch(e){
     body.innerHTML='<div class="v-note">ретро-данные недоступны (воркфлоу vectors-season ещё не прогнан) — ниже статическое описание модели.</div>'+vecStaticNote();
     right.textContent='';
