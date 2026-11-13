@@ -1,6 +1,6 @@
 'use client';
 
-/** Правая панель: Сводка / Прогноз / Станции / Ансамбль / АЧС / Надзор / OSINT. */
+/** Правая панель: Сводка / Прогноз / Станции / Векторы / Ансамбль / АЧС / Надзор / OSINT. */
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +19,7 @@ import TriggerFeed from './TriggerFeed';
 import StationTable from './StationTable';
 import EnsembleChart from './EnsembleChart';
 import SurveillancePanel from './SurveillancePanel';
+import SeasonVectorsPanel from './SeasonVectorsPanel';
 import MilkEconomics from './MilkEconomics';
 import { SpeciesStressBlock, VectorBlock } from './StressBlocks';
 
@@ -67,6 +68,7 @@ export default function RightPanel(props: {
         <TabsTrigger value="summary" className="h-7 font-mono text-[10px]">Сводка</TabsTrigger>
         <TabsTrigger value="forecast" className="h-7 font-mono text-[10px]">Прогноз</TabsTrigger>
         <TabsTrigger value="stations" className="h-7 font-mono text-[10px]">Станции</TabsTrigger>
+        <TabsTrigger value="vectors" className="h-7 font-mono text-[10px]">Векторы</TabsTrigger>
         <TabsTrigger value="ensemble" className="h-7 font-mono text-[10px]">Ансамбль</TabsTrigger>
         <TabsTrigger value="asf" className="h-7 font-mono text-[10px]">АЧС</TabsTrigger>
         <TabsTrigger value="surv" className="h-7 font-mono text-[10px]">Надзор</TabsTrigger>
@@ -187,6 +189,11 @@ export default function RightPanel(props: {
           selectedId={props.selectedId}
           onSelectPoint={props.onSelectPoint}
         />
+      </TabsContent>
+
+      {/* Векторы */}
+      <TabsContent value="vectors" className="mt-0 flex-1 overflow-y-auto">
+        <SeasonVectorsPanel />
       </TabsContent>
 
       {/* Ансамбль */}
