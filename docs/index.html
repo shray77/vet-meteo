@@ -644,23 +644,34 @@ function updateAges(){if(S.latest)$('updated').textContent='срез '+hhmm(S.la
 function renderKPIs(){
   const L=S.latest,O=S.outlook;
   const k=$('kpis').children;
+  /* QA-урок 17.11: пустой срез конвейера (outlook с 0 станций при сбое сбора)
+     ронял reduce без initial value — и вместе с ним ВЕСЬ рендер после KPI.
+     Guard + честный прочерк вместо падения (как в renderMilk). */
   if(L){
     const st=L.stations||[];
-    const mx=st.reduce((a,b)=>b.thi>a.thi?b:a);
-    setKPI(k[0],fmt(mx.thi),mx.name+' · T='+fmt(mx.t)+' RH='+mx.rh+'%','neut',zone(mx.thi)>=3?'hot':'neut');
-    const n72=st.filter(s=>s.thi>=72).length;
-    setKPI(k[1],n72,n72?'тепловой стресс сейчас':'все станции в норме','good',n72>0?'hot':'good');
-    const wp=st.reduce((a,b)=>b.wind>a.wind?b:a);
-    setKPI(k[5],fmt(wp.wind)+' м/с',wp.name+' · '+wdir2c(wp.wdir),'neut','neut');
-    const pr=st.reduce((a,b)=>(b.precip24||0)>(a.precip24||0)?b:a);
-    setKPI(k[4],fmt(pr.precip24||0,0)+' мм',(pr.precip24||0)?pr.name:'осадков нет','neut',(pr.precip24||0)>10?'good':'neut');
-    const hot=st.reduce((a,b)=>b.thiMax7>a.thiMax7?b:a);
-    setKPI(k[2],fmt(hot.thiMax7),hot.name+' · пик 7 дней','hot','hot');
+    if(st.length){
+      const mx=st.reduce((a,b)=>b.thi>a.thi?b:a);
+      setKPI(k[0],fmt(mx.thi),mx.name+' · T='+fmt(mx.t)+' RH='+fmt(mx.rh)+'%','neut',zone(mx.thi)>=3?'hot':'neut');
+      const n72=st.filter(s=>s.thi>=72).length;
+      setKPI(k[1],n72,n72?'тепловой стресс сейчас':'все станции в норме','good',n72>0?'hot':'good');
+      const wp=st.reduce((a,b)=>b.wind>a.wind?b:a);
+      setKPI(k[5],fmt(wp.wind)+' м/с',wp.name+' · '+wdir2c(wp.wdir),'neut','neut');
+      const pr=st.reduce((a,b)=>(b.precip24||0)>(a.precip24||0)?b:a);
+      setKPI(k[4],fmt(pr.precip24||0,0)+' мм',(pr.precip24||0)?pr.name:'осадков нет','neut',(pr.precip24||0)>10?'good':'neut');
+      const hot=st.reduce((a,b)=>b.thiMax7>a.thiMax7?b:a);
+      setKPI(k[2],fmt(hot.thiMax7),hot.name+' · пик 7 дней','hot','hot');
+    }else{
+      setKPI(k[0],'—','срез пуст — ждём CI','neut','neut');
+    }
   }
   if(O){
     const os=O.stations||[];
-    const d72=os.reduce((a,b)=>b.days72>a.days72?b:a);
-    setKPI(k[3],d72.days72+' дн',d72.days72?d72.name+' · превышение THI 72':'превышений не ждём','crit',d72.days72>0?'crit':'good');
+    if(os.length){
+      const d72=os.reduce((a,b)=>b.days72>a.days72?b:a);
+      setKPI(k[3],d72.days72+' дн',d72.days72?d72.name+' · превышение THI 72':'превышений не ждём','crit',d72.days72>0?'crit':'good');
+    }else{
+      setKPI(k[3],'—','дайджест не собрался','neut','neut');
+    }
   }
   renderMilk();
 }

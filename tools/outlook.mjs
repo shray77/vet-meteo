@@ -128,5 +128,14 @@ const outlook = {
   yesterday: yesterdaySummary,
   digest: [...alerts, ...alerts72, ...wet],
 };
+/* QA-находка 17.11 (прод-падение витрины): при сбое сбора (не все чанки
+   Open-Meteo дошли) stations = [] — и этот пустой дайджест ЗАТИРАЛ хороший
+   outlook.json, после чего renderKPIs утыкался reduce'ом в пустоту и ронял
+   весь рендер поста диспетчера. Пустой сбор НЕ перезаписывает прежний файл:
+   витрина продолжает жить на вчерашнем дайджесте с честной пометкой даты. */
+if (stations.length === 0) {
+  console.error('OUTLOOK: не собралось ни одной станции — прежний outlook.json НЕ трогаю');
+  process.exit(0);
+}
 writeFileSync(join(ROOT, 'data', 'outlook.json'), JSON.stringify(outlook, null, 1) + '\n');
 console.log(`OK: outlook по ${stations.length} станциям, алертов: ${outlook.digest.length}`);
