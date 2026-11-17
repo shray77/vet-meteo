@@ -204,8 +204,9 @@ export default function RightPanel(props: {
           </div>
           <EnsembleChart ens={props.ensemble} />
           <div className="rounded border border-[#3a4030] bg-[#14170f] p-2 font-mono text-[9px] leading-4 text-[#8a8f78]">
-            p10/p50/p90 — перцентили THImax по 51 члену ансамбля ECMWF (ensemble-api.open-meteo,
-            без ключа). В песочнице без интернета — локальная пертурбация (честно помечена).
+            p10/p50/p90 — перцентили THImax ансамбля ECMWF IFS (ensemble-api.open-meteo,
+            без ключа); пунктир — медиана AIFS, ИИ-модель ECMWF («второе мнение», Task 248).
+            В песочнице без интернета — локальная пертурбация (честно помечена).
             P(THI&gt;80)&gt;30% — закладывай водяное охлаждение/ночные кормления в план дня.
           </div>
         </div>

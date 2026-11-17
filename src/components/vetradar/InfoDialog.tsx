@@ -40,7 +40,7 @@ export default function InfoDialog() {
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Ансамбль ECMWF</h3>
-              <p className="text-[#b8bca8]">ensemble-api.open-meteo.com (51 член, без ключа): THImax p10/p50/p90, P(THI&gt;72/80). Фолбэк — пертурбация детерминированного прогноза.</p>
+              <p className="text-[#b8bca8]">ensemble-api.open-meteo.com (без ключа): два ансамбля ECMWF — физический IFS 0,25° и ИИ-модель AIFS 0,25° (по 50 членов): THImax p10/p50/p90, P(THI&gt;72/80); медиана AIFS — второе мнение. Фолбэк — пертурбация детерминированного прогноза.</p>
             </section>
             <section>
               <h3 className="mb-1 text-[#f0c674]">Трансмиссивные</h3>

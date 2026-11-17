@@ -148,6 +148,8 @@ export interface EnsembleDay {
 export interface EnsembleResult {
   source: 'ecmwf' | 'perturbed';
   days: EnsembleDay[];
+  /** Медианы AIFS (ИИ-модель, второе мнение) — те же дни; null, если не отдан */
+  aifsDays?: EnsembleDay[] | null;
 }
 
 /* ===== Архив GitHub Actions (data/latest.json + snapshots) ===== */

@@ -3,7 +3,10 @@ name: stations
 # Опрос метеостанций Ростовской области:
 # METAR (NOAA) + Open-Meteo (current/hourly/daily + shortwave) → THI и THIadj (Mader 2006)
 # → data/latest.json + data/forecast.json (часовой прогноз 48 ч, из тех же ответов — без доп. запросов)
-# + data/snapshots/ГГГГ-ММ-ДД.json + data/verify.json (ретро-проверка прогноза)
+# + data/snapshots/ГГГГ-ММ-ДД.json + data/verify.json (ретро-проверка прогноза:
+#   слой A — best_match vs ERA5, слой A2 — AIFS vs ERA5, слой B — git-история)
+# + data/ensemble.json (вероятностный слой: ансамбли ECMWF IFS + AIFS, 50+50 членов,
+#   веер THImax p10–p90 и P(>72/80) на 7 дней; age-gate 3 ч)
 # + Telegram-алерты по фронту.
 # Время в сводках и коммитах — МСК (Europe/Moscow, UTC+3).
 on:
@@ -76,6 +79,13 @@ jobs:
         if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         run: node tools/verify.mjs
 
+      - name: Ансамбли ECMWF — вероятностный слой (ensemble.json)
+        # Два независимых веера по всем станциям: физический IFS 0.25° + ИИ-модель
+        # AIFS 0.25° (50 членов каждая), один запрос на чанк. Age-gate 3 ч: пока
+        # файл свежий, шаг мгновенный (паттерн verify.json с его 12 ч).
+        if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
+        run: node tools/ensemble.mjs
+
       - name: Telegram-алерты (THI≥80 / THIadj≥80 / BRD≥75)
         if: ${{ steps.need.outputs.skip != 'true' || github.event_name == 'workflow_dispatch' }}
         env:
@@ -88,7 +98,7 @@ jobs:
         run: |
           echo '### Срез станций · время МСК' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          node -e "const l=require('./data/latest.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('срез:',msk(l.generatedAt),'МСК ·',l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20),'T='+s.t,'THI='+s.thi,'adj='+(s.thiAdj!=null?s.thiAdj:'—'),'THImax7='+s.thiMax7,'BRD='+s.brd);const fs=require('fs');if(fs.existsSync('./data/forecast.json')){const f=require('./data/forecast.json');console.log('прогноз 48ч:',msk(f.generatedAt),'МСК · от '+f.h0+' МСК · '+f.stations.length+' станций · часов: '+f.hours)}else{console.log('прогноз 48ч: НЕ собран')}if(fs.existsSync('./data/verify.json')){const v=require('./data/verify.json');console.log('ретро-проверка: расхождения '+v.verdict+(v.thi!=null?' (MAE THI ≤ '+v.thi+')':''));if(v.model&&v.model.hours)console.log('  слой А:',v.model.stations+' ст × '+v.model.hours+' ч · MAE THI '+v.model.mae.thi+(v.model.win72&&v.model.win72.pod!=null?' · окна>72: POD '+v.model.win72.pod+'% · FAR '+v.model.win72.far+'%':''));if(v.radar)console.log('  слой Б: выпусков '+v.radar.issues+' · проверено '+v.radar.hours+' ст-ч')}else{console.log('ретро-проверка: verify.json НЕ собран')}" >> $GITHUB_STEP_SUMMARY
+          node -e "const l=require('./data/latest.json');const msk=d=>new Date(d).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',hour12:false});console.log('срез:',msk(l.generatedAt),'МСК ·',l.stations.length+' станций');for(const s of l.stations)console.log(s.name.padEnd(20),'T='+s.t,'THI='+s.thi,'adj='+(s.thiAdj!=null?s.thiAdj:'—'),'THImax7='+s.thiMax7,'BRD='+s.brd);const fs=require('fs');if(fs.existsSync('./data/forecast.json')){const f=require('./data/forecast.json');console.log('прогноз 48ч:',msk(f.generatedAt),'МСК · от '+f.h0+' МСК · '+f.stations.length+' станций · часов: '+f.hours)}else{console.log('прогноз 48ч: НЕ собран')}if(fs.existsSync('./data/verify.json')){const v=require('./data/verify.json');console.log('ретро-проверка: расхождения '+v.verdict+(v.thi!=null?' (MAE THI ≤ '+v.thi+')':''));if(v.model&&v.model.hours)console.log('  слой А:',v.model.stations+' ст × '+v.model.hours+' ч · MAE THI '+v.model.mae.thi+(v.model.win72&&v.model.win72.pod!=null?' · окна>72: POD '+v.model.win72.pod+'% · FAR '+v.model.win72.far+'%':''));if(v.radar)console.log('  слой Б: выпусков '+v.radar.issues+' · проверено '+v.radar.hours+' ст-ч');if(v.model&&v.model.aifs)console.log('  слой А2 (AIFS, второе мнение): MAE THI '+v.model.aifs.mae.thi+' · '+v.model.aifs.model)}else{console.log('ретро-проверка: verify.json НЕ собран')}if(fs.existsSync('./data/ensemble.json')){const e=require('./data/ensemble.json');const ss=Object.values(e.stations||{});console.log('ансамбль: '+ss.length+' станций · IFS '+ss.filter(x=>x.ifs).length+' · AIFS '+ss.filter(x=>x.aifs).length+' · от '+msk(e.generatedAt)+' МСК')}else{console.log('ансамбль: ensemble.json НЕ собран')}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Коммит среза

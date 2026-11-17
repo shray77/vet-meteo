@@ -403,6 +403,20 @@ footer .flegal{margin-top:6px}
       <div class="cv-wrap"><canvas id="fcCanvas" width="1400" height="200"></canvas></div>
     </div>
     <div class="p-b" id="fcWindows" style="padding:2px 12px 8px"></div>
+    <div class="p-b" id="ensWrap" style="padding:0 12px 8px" hidden>
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:2px">
+        <b style="font:600 10.5px var(--mono);letter-spacing:.07em;color:var(--muted)">ВЕРОЯТНОСТИ · АНСАМБЛИ ECMWF · 7 ДНЕЙ</b>
+        <span class="small-dim" id="ensMeta"></span>
+      </div>
+      <div class="cv-wrap"><canvas id="ensCanvas" style="width:100%;height:150px"></canvas></div>
+      <div id="ensChips" style="margin-top:4px;line-height:1.9"></div>
+      <div class="legend" style="margin:6px 0 0">
+        <span><i style="background:color-mix(in srgb, var(--ds-blue) 25%, transparent);height:6px;border-radius:2px"></i>веер p10–p90 THImax · IFS (физическая)</span>
+        <span><i style="background:var(--ds-blue);height:2px;margin-bottom:3px"></i>медиана IFS</span>
+        <span><i style="background:var(--accent);height:2px;margin-bottom:3px;opacity:.85"></i>медиана AIFS — ИИ-модель (второе мнение)</span>
+        <span>пунктир — пороги THI 72/80</span>
+      </div>
+    </div>
     <div class="legend">
       <span><i style="background:var(--z3fg);height:2px;margin-bottom:3px"></i>THI прогноз</span>
       <span><i style="background:var(--accent);height:2px;margin-bottom:3px;opacity:.75"></i>THIadj (Mader)</span>
@@ -470,7 +484,7 @@ footer .flegal{margin-top:6px}
     <details class="fcol">
       <summary>источник данных · индексы THI/THIadj/CCI/BRD · дисклеймер</summary>
     <b>Источник данных:</b> CI-бот репозитория shray77/vet-meteo (GitHub Actions: срез станций и часовой прогноз 48 ч — каждые ~20 мин, метроном-цепочка воркфлоу + кроны 7/27/47 как резерв, суточный дайджест 06:17 МСК, недельный итог — воскресенье 06:47 МСК). Дашборд читает <b>raw.githubusercontent</b> напрямую из браузера, кэш CDN ~5 мин, автообновление каждые 5 мин. Время на странице — <b>МСК (UTC+3)</b>.<br>
-    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); CCI — Comprehensive Climate Index (Mader et al. 2010, ред. Erratum 2011): эквивалентная температура комфорта КРС круглый год = T + поправки RH/ветер/солнце (жаркие пороги 25/30/35/40/45 °C, холодовые для взрослых 0/−10/−20/−30/−40 °C, новорождённые на 5–10 °C мягче); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Вспышки болезней — на <a href="https://shray77.github.io/vet-heatmap/" target="_blank" rel="noopener">ВетКарте</a>. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a><br>
+    <b>Индексы:</b> THI — температура-влажностный индекс (стресс КРС: 68/72/80); THIadj — Mader 2006 (ветер + солнечная радиация); CCI — Comprehensive Climate Index (Mader et al. 2010, ред. Erratum 2011): эквивалентная температура комфорта КРС круглый год = T + поправки RH/ветер/солнце (жаркие пороги 25/30/35/40/45 °C, холодовые для взрослых 0/−10/−20/−30/−40 °C, новорождённые на 5–10 °C мягче); BRD — риск бронхопневмонии телят. Прогноз 48 ч — Open-Meteo hourly, час за часом (T, RH, ветер, осадки, THI/THIadj; тайм-машина карты — сдвиг до +48 ч; 49 точек = все 43 района РО; 6 из 7 METAR-аэродромов — ориентиры вне РО, помечены). Ретро-проверка: слой А — бэктест модели за 30 дней против ERA5-реанализа; слой Б — накопительная проверка наших выпусков 48 ч по git-истории против фактических срезов (data/verify.json, пересчёт в CI). Вероятностный слой — два ансамбля ECMWF (ensemble-api.open-meteo): физический IFS 0,25° и ИИ-модель AIFS 0,25° (Lang et al., Nature 2024), по 50 членов каждый — веер p10–p90 THImax и P(THImax&gt;72/80) на 7 дней, медиана AIFS — «второе мнение» к IFS; бэктест AIFS против ERA5 — слой А2 той же ретро-проверки. Ветер — м/с (до 07.09.2026 в км/ч — юнит-баг, исправлен). Карта: Leaflet + подложки без ключей и вотермарок (Esri Dark Gray / OpenTopoMap / OSM / Esri Imagery — переключатель слоёв; при недоступности CDN — координатная схема). Топо-поправки в полной версии — реальный SRTM DEM 0,05°. Вспышки болезней — на <a href="https://shray77.github.io/vet-heatmap/" target="_blank" rel="noopener">ВетКарте</a>. Полная версия — Next.js-приложение в репозитории. · <a href="https://github.com/shray77/vet-meteo" target="_blank" rel="noopener">github.com/shray77/vet-meteo</a><br>
     <b style="color:var(--accent)">Дисклеймер:</b> информационный сервис «как есть», не ветеринарная консультация и не официальный прогноз: индексы и модели рисков носят ознакомительный характер, консультируйтесь с ветеринарным врачом — даже если вы сами ветеринарный врач.
     </details>
     <div class="flegal"><a href="./terms.html">условия использования и дисклеймер</a> · <a href="https://shray77.github.io/terms.html">условия экосистемы</a></div>
@@ -483,7 +497,7 @@ footer .flegal{margin-top:6px}
 'use strict';
 /* ?raw=… — точка данных для локальных тестов, напр. ?raw=http://localhost:8000/data */
 const RAW=new URLSearchParams(location.search).get('raw')||'https://raw.githubusercontent.com/shray77/vet-meteo/main/data';
-const S={latest:null,outlook:null,geo:null,snaps:[],forecast:null,verify:null,tmOff:0,sort:{k:'thi',dir:-1}};
+const S={latest:null,outlook:null,geo:null,snaps:[],forecast:null,verify:null,ensemble:null,tmOff:0,sort:{k:'thi',dir:-1}};
 
 /* ── utils ─────────────────────────────── */
 const $=id=>document.getElementById(id);
@@ -518,14 +532,15 @@ async function loadAll(){
   const btn=$('refreshBtn'); if(btn)btn.disabled=true;
   $('errBanner').style.display='none';
   const errs=[];
-  const [latest,outlook,geo,forecast,verify]=await Promise.all([
+  const [latest,outlook,geo,forecast,verify,ensemble]=await Promise.all([
     jget(RAW+'/latest.json').catch(()=>{errs.push('latest.json');return null;}),
     jget(RAW+'/outlook.json').catch(()=>{errs.push('outlook.json');return null;}),
     jget(RAW+'/stations.json').catch(()=>{errs.push('stations.json');return null;}),
     jget(RAW+'/forecast.json').catch(()=>null),
-    jget(RAW+'/verify.json').catch(()=>null)
+    jget(RAW+'/verify.json').catch(()=>null),
+    jget(RAW+'/ensemble.json').catch(()=>null)
   ]);
-  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast; S.verify=verify||S.verify;
+  S.latest=latest||S.latest; S.outlook=outlook||S.outlook; S.geo=geo||S.geo; S.forecast=forecast||S.forecast; S.verify=verify||S.verify; S.ensemble=ensemble||S.ensemble;
   const days=[]; const now=new Date();
   for(let i=2;i>=0;i--)days.push(utcDate(new Date(now.getTime()-i*864e5+3*3600e3))); // даты снапшотов — МСК
   const snaps=await Promise.all(days.map(dd=>jget(RAW+'/snapshots/'+dd+'.json').catch(()=>null)));
@@ -1156,6 +1171,80 @@ function drawFc(fc){
 }
 $('fcSel').addEventListener('change',renderForecast);
 
+/* ── ансамбли: веер вероятностей THImax (ensemble.json) ──────────────
+   IFS (физическая) p10–p90 заливкой + медианы двух моделей; чипы —
+   P(THImax>72) по дням. Нет данных → блок скрыт, витрина не страдает. */
+function renderEns(){
+  const wrap=$('ensWrap'); if(!wrap)return;
+  const E=S.ensemble, sid=$('fcSel')?$('fcSel').value:null;
+  const st=(E&&E.stations)?E.stations[sid]:null;
+  const chips=$('ensChips'), meta=$('ensMeta');
+  if(!st||!(st.ifs&&st.ifs.p50&&st.ifs.p50.length)){wrap.hidden=true;return;}
+  wrap.hidden=false;
+  const dates=st.dates||[], n=dates.length;
+  const ifs=st.ifs, aifs=(st.aifs&&st.aifs.p50&&st.aifs.p50.length)?st.aifs:null;
+  let dMax=0,dAt=0;
+  if(aifs)for(let k=0;k<n;k++){const d=Math.abs(ifs.p50[k]-aifs.p50[k]);if(d>dMax){dMax=d;dAt=k;}}
+  meta.textContent='ансамбль '+hhmm(E.generatedAt)+(aifs?' · макс. расхождение медиан IFS↔AIFS: '+fmt(dMax)+' THI (день +'+dAt+')':'');
+  const cv=$('ensCanvas'),ctx=cv.getContext('2d'),C=PAL();
+  fitCv(cv);
+  const W=cv.clientWidth||cv.width,H=cv.clientHeight||cv.height,P={l:34,r:12,t:10,b:18};
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  const all=ifs.p10.concat(ifs.p90).concat(aifs?aifs.p50:[]);
+  let lo=Math.min(60,Math.floor(Math.min.apply(null,all)-2)),hi=Math.ceil(Math.max.apply(null,all)+2);
+  if(hi-lo<8)hi=lo+8;
+  const x=k=>P.l+(n<2?0.5:k/(n-1))*(W-P.l-P.r);
+  const y=v=>H-P.b-((v-lo)/(hi-lo))*(H-P.t-P.b);
+  /* пороги 72/80, если попадают в диапазон */
+  ctx.setLineDash([4,4]);ctx.lineWidth=1;
+  [[72,3],[80,4]].forEach(([thr,zi])=>{
+    if(thr>lo&&thr<hi){
+      ctx.strokeStyle=C.z[zi];ctx.globalAlpha=.75;
+      ctx.beginPath();ctx.moveTo(P.l,y(thr));ctx.lineTo(W-P.r,y(thr));ctx.stroke();
+      ctx.globalAlpha=1;ctx.fillStyle=C.z[zi];ctx.font='9px "IBM Plex Mono",monospace';ctx.textAlign='left';
+      ctx.fillText(String(thr),2,y(thr)+3);
+    }
+  });
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  /* веер p10–p90 IFS */
+  ctx.beginPath();
+  for(let k=0;k<n;k++){const xx=x(k),yy=y(ifs.p90[k]);k?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);}
+  for(let k=n-1;k>=0;k--)ctx.lineTo(x(k),y(ifs.p10[k]));
+  ctx.closePath();ctx.fillStyle=hexA(C.blue,.18);ctx.fill();
+  /* медиана IFS */
+  ctx.strokeStyle=C.blue;ctx.lineWidth=1.8;ctx.beginPath();
+  for(let k=0;k<n;k++){const xx=x(k),yy=y(ifs.p50[k]);k?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);}
+  ctx.stroke();
+  /* медиана AIFS — пунктир, второе мнение */
+  if(aifs){
+    ctx.strokeStyle=C.accent;ctx.lineWidth=1.6;ctx.setLineDash([6,4]);ctx.beginPath();
+    for(let k=0;k<n;k++){const xx=x(k),yy=y(aifs.p50[k]);k?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);}
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  /* ось X (дни) + Y-метки */
+  ctx.fillStyle=C.axis;ctx.textAlign='center';ctx.font='9px "IBM Plex Mono",monospace';
+  dates.forEach((d,k)=>ctx.fillText(dayLabel(d),x(k),H-6));
+  ctx.textAlign='right';
+  ctx.fillText(String(Math.round(lo)),P.l-4,y(lo)-2);
+  ctx.fillText(String(Math.round(hi)),P.l-4,y(hi)+8);
+  /* чипы вероятностей */
+  const pa=aifs?aifs.p72:null;
+  const any72=ifs.p72.some(v=>v>0)||(pa?pa.some(v=>v>0):false);
+  if(any72){
+    chips.innerHTML=dates.map((d,k)=>{
+      const p=ifs.p72[k],p8=ifs.p80[k];
+      const cls=p>=.5?'fc-win l4':(p>0?'fc-win l3':'fc-win');
+      return '<span class="'+cls+'">'+dayLabel(d)+' · <b>P(THImax&gt;72) '+Math.round(p*100)+'%</b>'
+        +(p8>0?' · &gt;80: '+Math.round(p8*100)+'%':'')
+        +(pa?' · AIFS '+Math.round(pa[k]*100)+'%':'')+'</span>';
+    }).join(' ');
+  }else{
+    const mx=Math.max.apply(null,ifs.p50.concat(aifs?aifs.p50:[]));
+    chips.innerHTML='<span class="small-dim">P(THImax&gt;72) по всем 7 дням — 0%: медианы ансамблей не выше THI '+fmt(mx,0)+'; окно тепловой нагрузки на горизонте недели не ожидается</span>';
+  }
+}
+$('fcSel').addEventListener('change',renderEns);
+
 /* ── тайм-машина карты ─────────────────── */
 document.querySelectorAll('#tmBar .tm').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -1225,7 +1314,7 @@ function renderVerify(){
   if(lr)lr.textContent='слой Б пополняется сам: 3 выпуска/час × 49 станций';
 }
 
-function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderForecast();renderVerify();renderHeat();renderHist();renderMetar();renderDigest();}
+function renderAll(){renderHeader();renderKPIs();renderMap();renderTable();renderForecast();renderEns();renderVerify();renderHeat();renderHist();renderMetar();renderDigest();}
 
 /* ── VetFlu: окна риска ВПГП (живой индекс из vetflu-site) ── */
 const FLU_URL='https://shray77.github.io/vetflu-site/data/model.json';
@@ -1343,7 +1432,7 @@ setInterval(loadVectors,30*60*1000);
 
 /* Task 195: канвасы перерисовываются под новую ширину окна/панели */
 let rszT=null;
-addEventListener('resize',()=>{clearTimeout(rszT);rszT=setTimeout(()=>{renderHist();renderForecast();},150);},{passive:true});
+addEventListener('resize',()=>{clearTimeout(rszT);rszT=setTimeout(()=>{renderHist();renderForecast();renderEns();},150);},{passive:true});
 
 /* Task 196: тумблер темы — канон сестёр (vetds-theme в localStorage);
    после переключения канвасы и маркеры карты перерисовываются палитрой

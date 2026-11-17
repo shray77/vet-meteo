@@ -3,6 +3,7 @@
 /**
  * Ансамблевый веер: p10–p90 THImax по дням + P(THI>80).
  * Источник: ECMWF ensemble (ensemble-api.open-meteo) либо пертурбация.
+ * Task 248: второй веер — ИИ-модель AIFS (пунктир — медиана AIFS).
  */
 import type { EnsembleResult } from '@/lib/types';
 import { thiColor } from './StationColor';
@@ -29,6 +30,11 @@ export default function EnsembleChart({ ens }: { ens: EnsembleResult | null }) {
   const band10 = days.map((d, i) => `${x(i)},${y(d.p90)}`).join(' ');
   const band90 = [...days].reverse().map((d, i) => `${x(days.length - 1 - i)},${y(d.p10)}`).join(' ');
   const mid = days.map((d, i) => `${x(i)},${y(d.p50)}`).join(' ');
+  /* Task 248: медиана AIFS — второе мнение ИИ-модели ECMWF */
+  const aifsMid =
+    ens.aifsDays && ens.aifsDays.length
+      ? ens.aifsDays.slice(0, days.length).map((d, i) => `${x(i)},${y(d.p50)}`).join(' ')
+      : null;
 
   return (
     <div className="rounded border border-[#3a4030] bg-[#14170f] p-2">
@@ -37,7 +43,7 @@ export default function EnsembleChart({ ens }: { ens: EnsembleResult | null }) {
         <span
           className={`font-mono text-[9px] ${ens.source === 'ecmwf' ? 'text-[#7fbf6f]' : 'text-[#f0c674]'}`}
         >
-          {ens.source === 'ecmwf' ? 'ECMWF 51 members' : 'пертурбация'}
+          {ens.source === 'ecmwf' ? (ens.aifsDays ? 'IFS + AIFS' : 'ECMWF 51 members') : 'пертурбация'}
         </span>
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
@@ -51,6 +57,9 @@ export default function EnsembleChart({ ens }: { ens: EnsembleResult | null }) {
         ))}
         <polygon points={`${band10} ${band90}`} fill="#f0c674" opacity="0.18" />
         <polyline points={mid} fill="none" stroke="#f0c674" strokeWidth="1.4" />
+        {aifsMid && (
+          <polyline points={aifsMid} fill="none" stroke="#7fbf6f" strokeWidth="1.3" strokeDasharray="5 4" />
+        )}
         {days.map((d, i) => (
           <g key={d.date}>
             <rect
@@ -90,6 +99,7 @@ export default function EnsembleChart({ ens }: { ens: EnsembleResult | null }) {
       </div>
       <div className="mt-1 font-mono text-[9px] text-[#8a8f78]">
         вероятностный прогноз: p90 высокий — планируй охлаждение/сдвиг кормлений заранее
+        {aifsMid ? ' · пунктир — медиана AIFS (ИИ-модель, второе мнение)' : ''}
       </div>
     </div>
   );

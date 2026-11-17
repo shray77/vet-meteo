@@ -1,0 +1,23 @@
+name: ci
+
+# Юнит-гейт тулз данных: известные ответы чистых функций вероятностного слоя
+# (THI, коррекция RH, перцентили, парсер членов ансамбля против живого
+# формата ключей Open-Meteo, age-gate). Наследие Task 174 («гейты не
+# вызывались ни одним CI») — здесь с первого дня. Зависимостей нет.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Известные ответы ансамблевого слоя
+        run: node --test tools/ensemble.test.mjs

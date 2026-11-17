@@ -24,16 +24,19 @@ function pct(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
 }
 
-/** Собирает массивы членов из ответа ансамбль-API (ключи *_memberN / *_N). */
-function collectMembers(json: any, varName: string): { dates: string[]; members: number[][] } {
+/** Собирает массивы членов из ответа ансамбль-API. Одиночная модель — ключи
+ *  *_memberN / *_N; мульти-модель (формат проверен 17.11.2026) —
+ *  var_memberN_<model>_ensemble. */
+function collectMembers(json: any, varName: string, model?: string): { dates: string[]; members: number[][] } {
   const daily = json.daily ?? {};
   const dates: string[] = daily.time ?? [];
   const members: number[][] = [];
-  const re = new RegExp(`^${varName}(?:_member)?_?(\\d+)$`);
+  const re = model
+    ? new RegExp(`^${varName}_member\\d+_${model}_ensemble$`)
+    : new RegExp(`^${varName}(?:_member)?_?(\\d+)$`);
   for (const key of Object.keys(daily)) {
     if (key === varName) continue; // детерминированный/агрегированный массив — не член
-    const m = key.match(re);
-    if (m) members.push(daily[key]);
+    if (key.match(re)) members.push(daily[key]);
   }
   return { dates, members };
 }
@@ -56,36 +59,46 @@ export async function fetchEnsemble(lat: number, lon: number): Promise<EnsembleR
     latitude: lat.toFixed(3),
     longitude: lon.toFixed(3),
     daily: 'temperature_2m_max,relative_humidity_2m_mean',
-    models: 'ecmwf_ifs025',
+    // Два независимых веера одним запросом: физический IFS + ИИ-модель AIFS
+    // (Lang et al., Nature 2024) — «второе мнение» для медианы (Task 248).
+    models: 'ecmwf_ifs025,ecmwf_aifs025',
     timezone: 'Europe/Moscow',
     forecast_days: '7',
   });
   const json = await fetchJson(`${ENS_URL}?${params}`);
+  const buildDays = (
+    t: { dates: string[]; members: number[][] },
+    rh: { members: number[][] },
+  ): EnsembleDay[] =>
+    t.dates.map((date, i) => {
+      const thiMaxes: number[] = [];
+      for (let m = 0; m < t.members.length; m++) {
+        const tMax = t.members[m][i];
+        const rhM = rh.members[m]?.[i] ?? 55;
+        if (tMax == null) continue;
+        thiMaxes.push(thi(tMax, Math.max(30, Math.min(98, rhM - 10))));
+      }
+      thiMaxes.sort((a, b) => a - b);
+      const n = thiMaxes.length || 1;
+      return {
+        date,
+        label: label(date),
+        p10: +pct(thiMaxes, 0.1).toFixed(1),
+        p50: +pct(thiMaxes, 0.5).toFixed(1),
+        p90: +pct(thiMaxes, 0.9).toFixed(1),
+        p72: +(thiMaxes.filter((v) => v > 72).length / n).toFixed(2),
+        p80: +(thiMaxes.filter((v) => v > 80).length / n).toFixed(2),
+      };
+    });
   if (json?.daily?.time?.length) {
-    const t = collectMembers(json, 'temperature_2m_max');
-    const rh = collectMembers(json, 'relative_humidity_2m_mean');
+    const t = collectMembers(json, 'temperature_2m_max', 'ecmwf_ifs025');
+    const rh = collectMembers(json, 'relative_humidity_2m_mean', 'ecmwf_ifs025');
     if (t.members.length >= 10 && t.dates.length) {
-      const days: EnsembleDay[] = t.dates.map((date, i) => {
-        const thiMaxes: number[] = [];
-        for (let m = 0; m < t.members.length; m++) {
-          const tMax = t.members[m][i];
-          const rhM = rh.members[m]?.[i] ?? 55;
-          if (tMax == null) continue;
-          thiMaxes.push(thi(tMax, Math.max(30, Math.min(98, rhM - 10))));
-        }
-        thiMaxes.sort((a, b) => a - b);
-        const n = thiMaxes.length || 1;
-        return {
-          date,
-          label: label(date),
-          p10: +pct(thiMaxes, 0.1).toFixed(1),
-          p50: +pct(thiMaxes, 0.5).toFixed(1),
-          p90: +pct(thiMaxes, 0.9).toFixed(1),
-          p72: +(thiMaxes.filter((v) => v > 72).length / n).toFixed(2),
-          p80: +(thiMaxes.filter((v) => v > 80).length / n).toFixed(2),
-        };
-      });
-      return { source: 'ecmwf', days };
+      const days = buildDays(t, rh);
+      const tA = collectMembers(json, 'temperature_2m_max', 'ecmwf_aifs025');
+      const rhA = collectMembers(json, 'relative_humidity_2m_mean', 'ecmwf_aifs025');
+      const aifsDays = tA.members.length >= 10 ? buildDays(tA, rhA) : null;
+      return { source: 'ecmwf', days, aifsDays };
     }
   }
   return null; // вызывающий код сделает пертурбацию по детерминированному прогнозу
@@ -123,5 +136,5 @@ export function perturbedEnsemble(daily: { date: string; thiMax: number }[]): En
       p80: +(members.filter((v) => v > 80).length / n).toFixed(2),
     };
   });
-  return { source: 'perturbed', days };
+  return { source: 'perturbed', days, aifsDays: null };
 }

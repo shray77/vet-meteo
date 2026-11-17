@@ -81,6 +81,9 @@ class Acc {
 }
 
 /* ══════════════ СЛОЙ A: модель vs ERA5, 30 дней ══════════════ */
+/* ERA5-чанки слоя A приберегаются для слоя A2 (AIFS-бэктест): тот же
+   «факт», без повторных запросов к archive-api. */
+const eraChunks = [];
 async function tierModel(prev) {
   const to = addDays(mskToday(), -1);          // ERA5 доступна до вчера
   const stale = !prev || !prev.generatedAt || Date.now() - Date.parse(prev.generatedAt) > 12 * 3600e3 || prev.to !== to;
@@ -100,6 +103,7 @@ async function tierModel(prev) {
       fetchJsonRetry(`https://archive-api.open-meteo.com/v1/archive?${geo}&${COMMON}`).catch((e) => (console.error('ERA5 чанк ' + i + ': ' + e.message), null)),
     ]);
     if (!fcJ || !eraJ) continue;
+    eraChunks[i / CH] = eraJ;                    // для слоя A2 (AIFS vs тот же ERA5)
     const fcs = Array.isArray(fcJ) ? fcJ : [fcJ];
     const eras = Array.isArray(eraJ) ? eraJ : [eraJ];
     for (let c = 0; c < fcs.length; c++) {
@@ -166,6 +170,96 @@ async function tierModel(prev) {
     bias: { t: r1(agg('accT').bias), rh: r1(agg('accRh').bias), wind: r1(agg('accW').bias), thi: r1(agg('accThi').bias) },
     win72: ev('ev'), win68: ev('ev68'), prEvents: ev('pr'),
     worst,
+  };
+}
+
+/* ══════════════ СЛОЙ A2: AIFS vs ERA5 — второе мнение ИИ-модели ══════════════ */
+/* ECMWF AIFS 0.25° на historical-forecast API: имя ecmwf_aifs025_single (доки
+   Open-Meteo, страница ECMWF API), фолбэк — ecmwf_aifs025. Первый запрос берёт
+   ОБА имени сразу: мульти-модель гарантирует суффиксированные ключи, и факт
+   сравнения именно AIFS (а не молча best_match) доказуем ключом ответа.
+   Слой сравнительный: недоступность AIFS НЕ роняет шаг. */
+async function tierModelAifs(prev) {
+  const to = addDays(mskToday(), -1);
+  const stale = !prev || !prev.generatedAt || Date.now() - Date.parse(prev.generatedAt) > 12 * 3600e3 || prev.to !== to;
+  if (!stale) return prev;
+  const from = addDays(to, -29);
+  const COMMON = `hourly=temperature_2m,relative_humidity_2m&timezone=Europe/Moscow&start_date=${from}&end_date=${to}`;
+  const CANDIDATES = ['ecmwf_aifs025_single,ecmwf_aifs025', 'ecmwf_aifs025_single', 'ecmwf_aifs025'];
+  const perSt = STATIONS.map(() => ({ accT: new Acc(), accThi: new Acc(), ev: { fc: 0, obs: 0, hits: 0, misses: 0, false: 0 } }));
+  const CH = 25;
+  let ok = 0, modelName = null;
+
+  /* какой ключ ответа несёт AIFS-данные; null → этого кандидата нет */
+  const pickAifs = (hF, multi, cand) => {
+    for (const k of ['temperature_2m_ecmwf_aifs025_single', 'temperature_2m_ecmwf_aifs025']) {
+      if (hF[k] != null) return { t: hF[k], rh: hF[k.replace('temperature_2m', 'relative_humidity_2m')], name: k.replace('temperature_2m_', '') };
+    }
+    /* одиночная модель может прийти без суффикса — тогда это она и есть (семантика OM) */
+    if (!multi && hF.temperature_2m != null) return { t: hF.temperature_2m, rh: hF.relative_humidity_2m, name: cand };
+    return null;
+  };
+
+  try {
+    for (const cand of CANDIDATES) {
+      const multi = cand.includes(',');
+      for (let i = 0; i < STATIONS.length; i += CH) {
+        const chunk = STATIONS.slice(i, i + CH);
+        const geo = `latitude=${chunk.map((s) => s.lat).join(',')}&longitude=${chunk.map((s) => s.lon).join(',')}`;
+        /* ERA5 — из кэша слоя A; если слой A не пересчитывался, фетчим сами */
+        let eras = eraChunks[i / CH];
+        if (!eras) {
+          eras = await fetchJsonRetry(`https://archive-api.open-meteo.com/v1/archive?${geo}&${COMMON}`).catch(() => null);
+          if (eras) eraChunks[i / CH] = eras;
+        }
+        const fcJ = await fetchJsonRetry(`https://historical-forecast-api.open-meteo.com/v1/forecast?${geo}&${COMMON}&models=${cand}`).catch(() => null);
+        if (!fcJ || !eras) continue;
+        const fcs = Array.isArray(fcJ) ? fcJ : [fcJ];
+        const eraArr = Array.isArray(eras) ? eras : [eras];
+        for (let c = 0; c < fcs.length; c++) {
+          const st = perSt[i + c];
+          const hF = fcs[c].hourly ?? {}, hE = eraArr[c]?.hourly ?? {};
+          const ft = hF.time ?? [], et = hE.time ?? [];
+          if (!ft.length || !et.length) continue;
+          const pick = pickAifs(hF, multi, cand);
+          if (!pick) continue;                   // кандидат не отдан — следующий
+          modelName = pick.name;                 // метка честна: это ключ ответа
+          ok++;
+          const em = new Map(et.map((t, k) => [t, k]));
+          for (let k = 0; k < ft.length; k++) {
+            const j = em.get(ft[k]);
+            if (j == null) continue;
+            const tA = pick.t[k], rhA = pick.rh?.[k];
+            const tE = hE.temperature_2m?.[j], rhE = hE.relative_humidity_2m?.[j];
+            if (tA == null || rhA == null || tE == null || rhE == null) continue;
+            st.accT.add(tA - tE);
+            const thiA = thi(tA, rhA), thiE = thi(tE, rhE);
+            st.accThi.add(thiA - thiE);
+            const sA = thiA > 72, sE = thiE > 72;
+            if (sE) { st.ev.obs++; sA ? st.ev.hits++ : st.ev.misses++; }
+            if (sA) { st.ev.fc++; if (!sE) st.ev.false++; }
+          }
+        }
+      }
+      if (ok) break;                             // кандидат сработал — хватит
+    }
+  } catch (e) { console.error('Слой A2 (AIFS): ' + e.message); }
+  if (!ok) {
+    console.error('Слой A2: AIFS на historical-forecast API недоступен — оставляю прежний (кэш)');
+    return prev || null;
+  }
+  const agg = (sel) => { const a = new Acc(); let n = 0; for (const st of perSt) { if (st[sel].n) { for (const v of st[sel].a) a.add(v); n += st[sel].n; } } return { n, mae: r1(a.mae), bias: r1(a.bias) }; };
+  const ev = { fc: 0, obs: 0, hits: 0, misses: 0, false: 0 };
+  for (const st of perSt) for (const k in ev) ev[k] += st.ev[k];
+  ev.pod = ev.obs ? r1(100 * ev.hits / ev.obs) : null;
+  ev.far = ev.fc ? r1(100 * ev.false / ev.fc) : null;
+  return {
+    generatedAt: new Date().toISOString(),
+    days: 30, from, to, model: modelName,
+    stations: ok, hours: perSt.reduce((s, st) => s + st.accThi.n, 0),
+    mae: { t: r1(agg('accT').mae), thi: r1(agg('accThi').mae) },
+    bias: { t: r1(agg('accT').bias), thi: r1(agg('accThi').bias) },
+    win72: ev,
   };
 }
 
@@ -271,6 +365,7 @@ function tierRadar() {
 /* ══════════════ вердикт + запись ══════════════ */
 const prev = existsSync(OUT) ? (() => { try { return JSON.parse(readFileSync(OUT, 'utf8')); } catch { return null; } })() : null;
 const model = await tierModel(prev ? prev.model : null);
+if (model) model.aifs = await tierModelAifs((prev && prev.model && prev.model.aifs) || null);
 const radar = tierRadar();
 
 function verdict(model, radar) {
@@ -293,6 +388,7 @@ L.push('СЛОЙ A · модель vs ERA5, 30 дней: ' + (model
   ? model.stations + ' станций × ' + model.hours + ' ч · MAE: T ' + model.mae.t + ' °C · THI ' + model.mae.thi + ' · ветер ' + model.mae.wind + ' м/с · bias THI ' + model.bias.thi
   : 'нет (API недоступны)'));
 if (model && model.win72 && model.win72.obs) L.push('  окна THI>72: факт ' + model.win72.obs + ' ч · поймано ' + model.win72.pod + '% · ложных ' + model.win72.far + '%');
+if (model && model.aifs) L.push('  СЛОЙ A2 · AIFS (ИИ-модель, второе мнение) vs ERA5: MAE THI ' + model.aifs.mae.thi + ' (best_match: ' + model.mae.thi + ')' + (model.aifs.win72 && model.aifs.win72.obs ? ' · окна>72: POD ' + model.aifs.win72.pod + '% / FAR ' + model.aifs.win72.far + '%' : ''));
 if (model && model.prEvents && model.prEvents.obs) L.push('  осадки ≥0,5 мм/ч: поймано ' + model.prEvents.pod + '% · ложных ' + model.prEvents.far + '%');
 L.push('СЛОЙ B · наш прогноз по git-истории: ' + radar.issues + ' выпусков · проверено ' + radar.hours + ' станций-часов' + (radar.span ? ' (' + radar.span[0].slice(5, 16).replace('T', ' ') + ' → ' + radar.span[1].slice(5, 16).replace('T', ' ') + ' МСК)' : ''));
 for (const b of radar.horizons) L.push('  горизонт ' + b.h + ': n=' + b.n + (b.n ? ' · MAE THI ' + b.maeThi + ' · T ' + b.maeT + ' °C' : ' — копится'));
